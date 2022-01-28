@@ -95,7 +95,7 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
         } else if (link_face_edge == e3) {
           edge_found[2] = true;
         }
-        link_face_edges_iter->next;
+        link_face_edges_iter = link_face_edges_iter->next;
         num_edges_link_face++;
       }
 
