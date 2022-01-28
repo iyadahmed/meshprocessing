@@ -47,7 +47,7 @@ Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2, bool *already_exists) {
   return new_edge;
 }
 
-/* TODO: support n-gons */
+/* TODO: function for creating n-gons */
 Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
                   bool *already_exists) {
   Face *new_face = NULL;
@@ -72,19 +72,43 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
     return NULL;
   }
 
+  /* check if face already exists, return it if so */
+  FaceList *link_faces_iter = v1->link_faces;
+  Face *link_face = NULL;
+  EdgeList *link_face_edges_iter = NULL;
+  Edge *link_face_edge = NULL;
+  size_t num_edges_link_face = 0;
+  bool edge_found[3] = {false};
+
   if (edge_already_exists[0] && edge_already_exists[1] &&
       edge_already_exists[2]) {
-    FaceList *link_faces_iter = v1->link_faces;
-    Face *link_face;
     while (link_faces_iter) {
       link_face = link_faces_iter->data;
-      if (find(link_face->vertices, v1) && find(link_face->vertices, v2) &&
-          find(link_face->vertices, v3)) {
+      link_face_edges_iter = link_face->edges;
+
+      num_edges_link_face = 0;
+      memset(edge_found, false, 3);
+      while (link_face_edges_iter) {
+        link_face_edge = link_face_edges_iter->data;
+        if (link_face_edge == e1) {
+          edge_found[0] = true;
+        } else if (link_face_edge == e2) {
+          edge_found[1] = true;
+        } else if (link_face_edge == e3) {
+          edge_found[2] = true;
+        }
+        link_face_edges_iter->next;
+        num_edges_link_face++;
+      }
+
+      if (edge_found[0] && edge_found[1] && edge_found[2] &&
+          (num_edges_link_face == 3)) {
         if (already_exists) {
           *already_exists = true;
+          return link_face;
         }
-        return link_face;
       }
+
       link_faces_iter = link_faces_iter->next;
     }
   }

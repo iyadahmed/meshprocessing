@@ -23,7 +23,6 @@ typedef struct Edge {
 typedef struct Face {
   float normal[3];
 
-  VertList *vertices;
   EdgeList *edges;
 } Face;
 
