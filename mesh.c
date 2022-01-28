@@ -72,7 +72,7 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
     return NULL;
   }
 
-  /* check if face already exists, return it if so */
+  /* Check if face already exists, return it if so */
   FaceList *link_faces_iter = v1->link_faces;
   Face *link_face = NULL;
   EdgeList *link_face_edges_iter = NULL;

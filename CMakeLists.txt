@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.18)
 
 project(meshprocessing)
-add_executable(meshprocessing
-               example.c
+set(TARGET meshprocessing PROPERTY C_STANDARD 11)
+
+add_executable(test_stl
+               test_stl.c
                stl.c
                mesh.c
                list.h
@@ -11,9 +13,20 @@ add_executable(meshprocessing
                mesh.h
                list.c)
 
-set(TARGET meshprocessing PROPERTY C_STANDARD 11)
+add_executable(test_mesh
+               test_mesh.c
+               stl.c
+               mesh.c
+               list.h
+               
+               stl.h
+               mesh.h
+               list.c)
+
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
-    target_link_libraries(meshprocessing m) # link libmath
+    # link libmath
+    target_link_libraries(test_stl m) 
+    target_link_libraries(test_mesh m)
     add_compile_options("-Ofast")
     add_compile_options("-march=native")
 elseif(MSVC)

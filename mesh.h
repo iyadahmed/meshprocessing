@@ -1,6 +1,8 @@
 #ifndef MESH_H
 #define MESH_H
 
+#include <stdbool.h>
+
 #include "list.h"
 
 typedef List VertList;
@@ -31,5 +33,10 @@ typedef struct Mesh {
   EdgeList *edges;
   FaceList *faces;
 } Mesh;
+
+Vert *create_vertex(Mesh *mesh, float location[3]);
+Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2, bool *already_exists);
+Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
+                  bool *already_exists);
 
 #endif

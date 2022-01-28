@@ -5,7 +5,7 @@
 
 int main(int argc, char **argv) {
   if (argc < 2) {
-    puts("Usage: example path_to_stl.stl");
+    puts("Usage: test_stl path_to_stl.stl");
     return 1;
   }
   TriangleList *tri_list = read_stl(argv[1]);
@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
   Triangle *tri;
   while (tri_list) {
     for (int i = 0; i < 3; i++) {
-      tri = tri_list->data;
+      tri = (Triangle *)(tri_list->data);
       float *v = tri->vertices[i];
       for (int j = 0; j < 3; j++) {
         bb_min[j] = fminf(v[j], bb_min[j]);
