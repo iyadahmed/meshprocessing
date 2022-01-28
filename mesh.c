@@ -10,21 +10,16 @@ Vert *create_vertex(Mesh *mesh, float location[3]) {
   if (!new_vert) {
     return NULL;
   }
+  new_vert->link_edges = NULL;
+  new_vert->link_faces = NULL;
   memcpy(new_vert->location, location, sizeof(float[3]));
   prepend(&(mesh->vertices), new_vert);
   return new_vert;
 }
 
 Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2, bool *already_exists) {
-  Edge *new_edge = malloc(sizeof(Edge));
-  if (!new_edge) {
-    return NULL;
-  }
-  new_edge->v1 = v1;
-  new_edge->v2 = v2;
-
   EdgeList *link_edge_iter = v1->link_edges;
-  Edge *link_edge;
+  Edge *link_edge = NULL;
   while (link_edge_iter) {
     link_edge = link_edge_iter->data;
     if (((link_edge->v1 == v1) && (link_edge->v2 == v2)) ||
@@ -36,6 +31,14 @@ Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2, bool *already_exists) {
     }
     link_edge_iter = link_edge_iter->next;
   }
+
+  Edge *new_edge = malloc(sizeof(Edge));
+  if (!new_edge) {
+    return NULL;
+  }
+  new_edge->link_faces = NULL;
+  new_edge->v1 = v1;
+  new_edge->v2 = v2;
 
   prepend(&(mesh->edges), new_edge);
   prepend(&(v1->link_edges), new_edge);
@@ -53,11 +56,6 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
   Face *new_face = NULL;
   Edge *e1 = NULL, *e2 = NULL, *e3 = NULL;
   bool edge_already_exists[3] = {false};
-
-  new_face = malloc(sizeof(Face));
-  if (!new_face) {
-    return NULL;
-  }
 
   e1 = create_edge(mesh, v1, v2, edge_already_exists);
   if (!e1) {
@@ -113,7 +111,19 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
     }
   }
 
+  new_face = malloc(sizeof(Face));
+  if (!new_face) {
+    return NULL;
+  }
+  new_face->edges = NULL;
+  memset(new_face->normal, 0.0, 3);
+
   prepend(&(mesh->faces), new_face);
+
+  prepend(&(new_face->edges), e1);
+  prepend(&(new_face->edges), e2);
+  prepend(&(new_face->edges), e3);
+
   prepend(&(v1->link_faces), new_face);
   prepend(&(v2->link_faces), new_face);
   prepend(&(v3->link_faces), new_face);
