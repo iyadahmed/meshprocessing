@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -14,8 +15,7 @@ Vert *create_vertex(Mesh *mesh, float location[3]) {
   return new_vert;
 }
 
-/* TODO: ensure unique edges */
-Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2) {
+Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2, bool *already_exists) {
   Edge *new_edge = malloc(sizeof(Edge));
   if (!new_edge) {
     return NULL;
@@ -23,36 +23,73 @@ Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2) {
   new_edge->v1 = v1;
   new_edge->v2 = v2;
 
+  EdgeList *link_edge_iter = v1->link_edges;
+  Edge *link_edge;
+  while (link_edge_iter) {
+    link_edge = link_edge_iter->data;
+    if (((link_edge->v1 == v1) && (link_edge->v2 == v2)) ||
+        ((link_edge->v1 == v2) && (link_edge->v2 == v1))) {
+      if (already_exists) {
+        *already_exists = true;
+      }
+      return link_edge;
+    }
+    link_edge_iter = link_edge_iter->next;
+  }
+
   prepend(&(mesh->edges), new_edge);
   prepend(&(v1->link_edges), new_edge);
   prepend(&(v2->link_edges), new_edge);
+
+  if (already_exists) {
+    *already_exists = false;
+  }
+  return new_edge;
 }
 
 /* TODO: support n-gons */
-Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3) {
-  Face *new_face;
-  Edge *e1, *e2, *e3;
+Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
+                  bool *already_exists) {
+  Face *new_face = NULL;
+  Edge *e1 = NULL, *e2 = NULL, *e3 = NULL;
+  bool edge_already_exists[3] = {false};
 
   new_face = malloc(sizeof(Face));
   if (!new_face) {
     return NULL;
   }
 
-  e1 = create_edge(mesh, v1, v2);
+  e1 = create_edge(mesh, v1, v2, edge_already_exists);
   if (!e1) {
     return NULL;
   }
-  e2 = create_edge(mesh, v2, v3);
+  e2 = create_edge(mesh, v2, v3, edge_already_exists + 1);
   if (!e2) {
     return NULL;
   }
-  e3 = create_edge(mesh, v3, v1);
+  e3 = create_edge(mesh, v3, v1, edge_already_exists + 2);
   if (!e3) {
     return NULL;
   }
 
-  prepend(&(mesh->faces), new_face);
+  if (edge_already_exists[0] && edge_already_exists[1] &&
+      edge_already_exists[2]) {
+    FaceList *link_faces_iter = v1->link_faces;
+    Face *link_face;
+    while (link_faces_iter) {
+      link_face = link_faces_iter->data;
+      if (find(link_face->vertices, v1) && find(link_face->vertices, v2) &&
+          find(link_face->vertices, v3)) {
+        if (already_exists) {
+          *already_exists = true;
+        }
+        return link_face;
+      }
+      link_faces_iter = link_faces_iter->next;
+    }
+  }
 
+  prepend(&(mesh->faces), new_face);
   prepend(&(v1->link_faces), new_face);
   prepend(&(v2->link_faces), new_face);
   prepend(&(v3->link_faces), new_face);
@@ -60,4 +97,9 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3) {
   prepend(&(e1->link_faces), new_face);
   prepend(&(e2->link_faces), new_face);
   prepend(&(e3->link_faces), new_face);
+
+  if (already_exists) {
+    *already_exists = false;
+  }
+  return new_face;
 }
