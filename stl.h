@@ -1,5 +1,7 @@
-#ifndef MESH_STL
-#define MESH_STL
+#ifndef STL_H
+#define STL_H
+
+#include "list.h"
 
 typedef struct Triangle {
   float normal[3];
@@ -13,10 +15,7 @@ typedef struct Triangle {
   };
 } Triangle;
 
-typedef struct TriangleList {
-  Triangle *data;
-  struct TriangleList *next;
-} TriangleList;
+typedef List TriangleList;
 
 void free_triangles(TriangleList **head_ref);
 TriangleList *read_stl(char *filepath);

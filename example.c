@@ -16,9 +16,11 @@ int main(int argc, char **argv) {
   float bb_min[3] = {INFINITY};
   float bb_max[3] = {-INFINITY};
   size_t num_tri = 0;
+  Triangle *tri;
   while (tri_list) {
     for (int i = 0; i < 3; i++) {
-      float *v = tri_list->data->vertices[i];
+      tri = tri_list->data;
+      float *v = tri->vertices[i];
       for (int j = 0; j < 3; j++) {
         bb_min[j] = fminf(v[j], bb_min[j]);
         bb_max[j] = fmaxf(v[j], bb_max[j]);

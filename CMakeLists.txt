@@ -1,7 +1,15 @@
 cmake_minimum_required(VERSION 3.18)
 
 project(meshprocessing)
-add_executable(meshprocessing example.c stl.c stl.h)
+add_executable(meshprocessing
+               example.c
+               stl.c
+               mesh.c
+               list.h
+               
+               stl.h
+               mesh.h
+               list.c)
 
 set(TARGET meshprocessing PROPERTY C_STANDARD 11)
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
