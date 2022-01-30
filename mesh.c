@@ -50,6 +50,17 @@ Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2, bool *already_exists) {
   return new_edge;
 }
 
+static void loop_prepend(Loop **loop_first_ref, Vert *vert, Edge *edge) {
+  Loop *new_loop = malloc(sizeof(Loop));
+  if (NULL == new_loop) {
+    return;
+  }
+  new_loop->vert = vert;
+  new_loop->edge = edge;
+  new_loop->next = *loop_first_ref;
+  *loop_first_ref = new_loop;
+}
+
 /* TODO: function for creating n-gons */
 Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
                   bool *already_exists) {
@@ -116,30 +127,12 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
   if (NULL == new_face) {
     return NULL;
   }
-
-  new_face->loop_first = malloc(sizeof(Loop));
-  if (NULL == new_face->loop_first) {
-    return NULL;
-  }
-  new_face->loop_first->vert = v1;
-  new_face->loop_first->edge = e1;
-
-  new_face->loop_first->next = malloc(sizeof(Loop));
-  if (NULL == new_face->loop_first->next) {
-    return NULL;
-  }
-  new_face->loop_first->next->vert = v2;
-  new_face->loop_first->next->edge = e2;
-
-  new_face->loop_first->next->next = malloc(sizeof(Loop));
-  if (NULL == new_face->loop_first->next->next) {
-    return NULL;
-  }
-  new_face->loop_first->next->next->vert = v3;
-  new_face->loop_first->next->next->edge = e3;
-  new_face->loop_first->next->next->next = NULL;
-
+  new_face->loop_first = NULL;
   memset(new_face->normal, 0.0, 3);
+
+  loop_prepend(&(new_face->loop_first), v1, e1);
+  loop_prepend(&(new_face->loop_first), v2, e2);
+  loop_prepend(&(new_face->loop_first), v3, e3);
 
   prepend(&(mesh->faces), new_face);
 
