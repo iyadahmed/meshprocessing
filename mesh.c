@@ -73,7 +73,7 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
   /* Check if face already exists, return it if so */
   FaceList *link_faces_iter = v1->link_faces;
   Face *link_face = NULL;
-  EdgeList *link_face_edges_iter = NULL;
+  Loop *link_face_loops_iter = NULL;
   Edge *link_face_edge = NULL;
   size_t num_edges_link_face = 0;
   bool edge_found[3] = {false};
@@ -82,12 +82,13 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
       edge_already_exists[2]) {
     while (link_faces_iter) {
       link_face = link_faces_iter->data;
-      link_face_edges_iter = link_face->edges;
+      link_face_loops_iter = link_face->loop_first;
 
       num_edges_link_face = 0;
       memset(edge_found, false, 3);
-      while (link_face_edges_iter) {
-        link_face_edge = link_face_edges_iter->data;
+      while (link_face_loops_iter) {
+        link_face_edge = link_face_loops_iter->edge;
+
         if (link_face_edge == e1) {
           edge_found[0] = true;
         } else if (link_face_edge == e2) {
@@ -95,7 +96,7 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
         } else if (link_face_edge == e3) {
           edge_found[2] = true;
         }
-        link_face_edges_iter = link_face_edges_iter->next;
+        link_face_loops_iter = link_face_loops_iter->next;
         num_edges_link_face++;
       }
 
@@ -115,14 +116,32 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
   if (!new_face) {
     return NULL;
   }
-  new_face->edges = NULL;
+
+  new_face->loop_first = malloc(sizeof(Loop));
+  if (NULL == new_face->loop_first) {
+    return NULL;
+  }
+  new_face->loop_first->vert = v1;
+  new_face->loop_first->edge = e1;
+
+  new_face->loop_first->next = malloc(sizeof(Loop));
+  if (NULL == new_face->loop_first->next) {
+    return NULL;
+  }
+  new_face->loop_first->next->vert = v2;
+  new_face->loop_first->next->edge = e2;
+
+  new_face->loop_first->next->next = malloc(sizeof(Loop));
+  if (NULL == new_face->loop_first->next->next) {
+    return NULL;
+  }
+  new_face->loop_first->next->next->vert = v3;
+  new_face->loop_first->next->next->edge = e3;
+  new_face->loop_first->next->next->next = NULL;
+
   memset(new_face->normal, 0.0, 3);
 
   prepend(&(mesh->faces), new_face);
-
-  prepend(&(new_face->edges), e1);
-  prepend(&(new_face->edges), e2);
-  prepend(&(new_face->edges), e3);
 
   prepend(&(v1->link_faces), new_face);
   prepend(&(v2->link_faces), new_face);

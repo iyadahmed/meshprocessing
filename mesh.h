@@ -22,10 +22,17 @@ typedef struct Edge {
   FaceList *link_faces;
 } Edge;
 
+typedef struct Loop {
+  Vert *vert;
+  Edge *edge;
+
+  struct Loop *next;
+} Loop;
+
 typedef struct Face {
   float normal[3];
 
-  EdgeList *edges;
+  Loop *loop_first;
 } Face;
 
 typedef struct Mesh {
