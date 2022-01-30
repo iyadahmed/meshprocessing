@@ -6,7 +6,7 @@
 
 int main(int argc, char **argv) {
   Mesh *mesh = malloc(sizeof(Mesh));
-  if (!mesh) {
+  if (NULL == mesh) {
     puts("Failed to allocate memory for Mesh");
     return 1;
   }

@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
     return 1;
   }
   TriangleList *tri_list = read_stl(argv[1]);
-  if (!tri_list) {
+  if (NULL == tri_list) {
     puts("Failed to read STL");
     return 1;
   }

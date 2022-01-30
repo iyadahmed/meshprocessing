@@ -4,7 +4,7 @@
 
 void prepend(List **head_ref, void *data) {
   List *new_elem = malloc(sizeof(List));
-  if (!new_elem) {
+  if (NULL == new_elem) {
     return;
   }
   new_elem->data = data;

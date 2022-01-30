@@ -34,11 +34,11 @@
 
 static void prepend_triangle(TriangleList **head_ref, Triangle *tri) {
   TriangleList *elem = malloc(sizeof(TriangleList));
-  if (!elem) {
+  if (NULL == elem) {
     return;
   }
   Triangle *data = malloc(sizeof(Triangle));
-  if (!data) {
+  if (NULL == data) {
     return;
   }
   memcpy(data, tri, sizeof(Triangle));
@@ -184,7 +184,7 @@ static TriangleList *read_stl_ascii(FILE *file) {
 TriangleList *read_stl(char *filepath) {
   /* TODO: make fopen work for utf8 paths on Windows */
   FILE *file = fopen(filepath, "rb");
-  if (!file) {
+  if (NULL == file) {
     return NULL;
   }
   /* TODO: check if STL is valid */

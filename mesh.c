@@ -7,7 +7,7 @@
 
 Vert *create_vertex(Mesh *mesh, float location[3]) {
   Vert *new_vert = malloc(sizeof(Vert));
-  if (!new_vert) {
+  if (NULL == new_vert) {
     return NULL;
   }
   new_vert->link_edges = NULL;
@@ -33,7 +33,7 @@ Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2, bool *already_exists) {
   }
 
   Edge *new_edge = malloc(sizeof(Edge));
-  if (!new_edge) {
+  if (NULL == new_edge) {
     return NULL;
   }
   new_edge->link_faces = NULL;
@@ -58,15 +58,15 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
   bool edge_already_exists[3] = {false};
 
   e1 = create_edge(mesh, v1, v2, edge_already_exists);
-  if (!e1) {
+  if (NULL == e1) {
     return NULL;
   }
   e2 = create_edge(mesh, v2, v3, edge_already_exists + 1);
-  if (!e2) {
+  if (NULL == e2) {
     return NULL;
   }
   e3 = create_edge(mesh, v3, v1, edge_already_exists + 2);
-  if (!e3) {
+  if (NULL == e3) {
     return NULL;
   }
 
@@ -113,7 +113,7 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
   }
 
   new_face = malloc(sizeof(Face));
-  if (!new_face) {
+  if (NULL == new_face) {
     return NULL;
   }
 
