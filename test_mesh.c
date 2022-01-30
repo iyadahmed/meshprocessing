@@ -26,5 +26,7 @@ int main(int argc, char **argv) {
     puts("Duplicate faces");
   }
   printf("Face1: %p\nFace2: %p\n", f1, f2);
+
+  mesh_free(&mesh);
   return 0;
 }

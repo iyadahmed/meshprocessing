@@ -46,4 +46,6 @@ Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2, bool *already_exists);
 Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
                   bool *already_exists);
 
+void mesh_free(Mesh **mesh_ref);
+
 #endif

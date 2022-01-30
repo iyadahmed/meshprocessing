@@ -13,8 +13,14 @@ Vert *create_vertex(Mesh *mesh, float location[3]) {
   new_vert->link_edges = NULL;
   new_vert->link_faces = NULL;
   memcpy(new_vert->location, location, sizeof(float[3]));
-  prepend(&(mesh->vertices), new_vert);
+  list_prepend(&(mesh->vertices), new_vert);
   return new_vert;
+}
+
+static void vert_free(Vert *vert) {
+  list_free(&(vert->link_edges), NULL);
+  list_free(&(vert->link_faces), NULL);
+  free(vert);
 }
 
 Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2, bool *already_exists) {
@@ -40,9 +46,9 @@ Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2, bool *already_exists) {
   new_edge->v1 = v1;
   new_edge->v2 = v2;
 
-  prepend(&(mesh->edges), new_edge);
-  prepend(&(v1->link_edges), new_edge);
-  prepend(&(v2->link_edges), new_edge);
+  list_prepend(&(mesh->edges), new_edge);
+  list_prepend(&(v1->link_edges), new_edge);
+  list_prepend(&(v2->link_edges), new_edge);
 
   if (already_exists) {
     *already_exists = false;
@@ -50,7 +56,12 @@ Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2, bool *already_exists) {
   return new_edge;
 }
 
-static void loop_prepend(Loop **loop_first_ref, Vert *vert, Edge *edge) {
+static void edge_free(Edge *edge) {
+  list_free(&(edge->link_faces), NULL);
+  free(edge);
+}
+
+static void loop_list_prepend(Loop **loop_first_ref, Vert *vert, Edge *edge) {
   Loop *new_loop = malloc(sizeof(Loop));
   if (NULL == new_loop) {
     return;
@@ -130,22 +141,41 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
   new_face->loop_first = NULL;
   memset(new_face->normal, 0.0, 3);
 
-  loop_prepend(&(new_face->loop_first), v1, e1);
-  loop_prepend(&(new_face->loop_first), v2, e2);
-  loop_prepend(&(new_face->loop_first), v3, e3);
+  loop_list_prepend(&(new_face->loop_first), v1, e1);
+  loop_list_prepend(&(new_face->loop_first), v2, e2);
+  loop_list_prepend(&(new_face->loop_first), v3, e3);
 
-  prepend(&(mesh->faces), new_face);
+  list_prepend(&(mesh->faces), new_face);
 
-  prepend(&(v1->link_faces), new_face);
-  prepend(&(v2->link_faces), new_face);
-  prepend(&(v3->link_faces), new_face);
+  list_prepend(&(v1->link_faces), new_face);
+  list_prepend(&(v2->link_faces), new_face);
+  list_prepend(&(v3->link_faces), new_face);
 
-  prepend(&(e1->link_faces), new_face);
-  prepend(&(e2->link_faces), new_face);
-  prepend(&(e3->link_faces), new_face);
+  list_prepend(&(e1->link_faces), new_face);
+  list_prepend(&(e2->link_faces), new_face);
+  list_prepend(&(e3->link_faces), new_face);
 
   if (already_exists) {
     *already_exists = false;
   }
   return new_face;
+}
+
+static void face_free(Face *face) {
+  Loop *loops_iter = face->loop_first;
+  Loop *next_item = NULL;
+  while (loops_iter) {
+    next_item = loops_iter->next;
+    free(loops_iter);
+    loops_iter = next_item;
+  }
+  free(face);
+}
+
+void mesh_free(Mesh **mesh_ref) {
+  list_free(&((*mesh_ref)->vertices), (void (*)(void *))vert_free);
+  list_free(&((*mesh_ref)->edges), (void (*)(void *))edge_free);
+  list_free(&((*mesh_ref)->faces), (void (*)(void *))face_free);
+  free(*mesh_ref);
+  *mesh_ref = NULL;
 }

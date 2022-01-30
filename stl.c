@@ -32,7 +32,7 @@
 
 #include "stl.h"
 
-static void prepend_triangle(TriangleList **head_ref, Triangle *tri) {
+static void list_prepend_triangle(TriangleList **head_ref, Triangle *tri) {
   TriangleList *elem = malloc(sizeof(TriangleList));
   if (NULL == elem) {
     return;
@@ -95,7 +95,7 @@ static TriangleList *read_stl_binary(FILE *file) {
     if (fread(&current_triangle, sizeof(Triangle), 1, file) == 0) {
       return triangle_list;
     }
-    prepend_triangle(&triangle_list, &current_triangle);
+    list_prepend_triangle(&triangle_list, &current_triangle);
     /* TODO: switch floats endianess if machine is not little endian */
     /* Skip "Attribute byte count" */
     if (fseek(file, sizeof(uint16_t), SEEK_CUR) != 0) {
@@ -175,7 +175,7 @@ static TriangleList *read_stl_ascii(FILE *file) {
         }
         line_stripped = lstrip_unsafe(line_buf);
       }
-      prepend_triangle(&triangle_list, &current_triangle);
+      list_prepend_triangle(&triangle_list, &current_triangle);
     }
   }
   return triangle_list;

@@ -6,7 +6,8 @@ typedef struct List {
   struct List *next;
 } List;
 
-void prepend(List **head_ref, void *data);
-List *find(List *head, void *data);
+void list_prepend(List **head_ref, void *data);
+List *list_find(List *head, void *data);
+void list_free(List **head_ref, void (*data_free_func)(void *));
 
 #endif
