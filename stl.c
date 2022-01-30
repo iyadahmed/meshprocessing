@@ -110,7 +110,6 @@ static int parse_float3_str(char *buf, float out[3]) {
   char *startptr = buf;
   char *endptr = NULL;
   for (int i = 0; i < 3; i++) {
-    /* TODO: check for null termination */
     out[i] = strtof(startptr, &endptr);
     if ((errno != 0) || (endptr == startptr)) {
       return 1;
