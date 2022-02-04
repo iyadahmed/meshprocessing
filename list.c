@@ -2,14 +2,15 @@
 
 #include "list.h"
 
-void list_prepend(List **head_ref, void *data) {
+List *list_prepend(List **head_ref, void *data) {
   List *new_elem = malloc(sizeof(List));
   if (NULL == new_elem) {
-    return;
+    return NULL;
   }
   new_elem->data = data;
   new_elem->next = *head_ref;
   *head_ref = new_elem;
+  return new_elem;
 }
 
 List *list_find(List *head, void *data) {
