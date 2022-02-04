@@ -5,29 +5,44 @@
 #include "list.h"
 #include "mesh.h"
 
-Vert *create_vertex(Mesh *mesh, float location[3]) {
+#define VERT_FROM_VERT_ITEM(item) ((Vert *)(item->data))
+#define EDGE_FROM_EDGE_ITEM(item) ((Edge *)(item->data))
+#define FACE_FROM_FACE_ITEM(item) ((Face *)(item->data))
+
+static void loop_list_prepend(LoopList **head_ref, MeshVertItem *vert_item,
+                              MeshEdgeItem *edge_item) {
+  Loop *loop = malloc(sizeof(Loop));
+  if (NULL == loop) {
+    return;
+  }
+  list_prepend(head_ref, loop);
+}
+
+MeshVertItem *create_vertex(Mesh *mesh, float location[3]) {
   Vert *new_vert = malloc(sizeof(Vert));
   if (NULL == new_vert) {
     return NULL;
   }
-  new_vert->link_edges = NULL;
-  new_vert->link_faces = NULL;
+  new_vert->link_edge_items = NULL;
+  new_vert->link_face_items = NULL;
   memcpy(new_vert->location, location, sizeof(float[3]));
-  new_vert->mesh_vertices_list_item = list_prepend(&(mesh->vertices), new_vert);
-  return new_vert;
+  return list_prepend(&(mesh->vert_items), new_vert);
 }
 
-Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2, bool *already_exists) {
-  EdgeList *link_edge_iter = v1->link_edges;
+MeshEdgeItem *create_edge(Mesh *mesh, MeshVertItem *v1, MeshVertItem *v2,
+                          bool *already_exists) {
+  MeshEdgeItemList *link_edge_iter = VERT_FROM_VERT_ITEM(v1)->link_edge_items;
+  MeshEdgeItem *link_edge_item = NULL;
   Edge *link_edge = NULL;
   while (link_edge_iter) {
-    link_edge = link_edge_iter->data;
-    if (((link_edge->v1 == v1) && (link_edge->v2 == v2)) ||
-        ((link_edge->v1 == v2) && (link_edge->v2 == v1))) {
+    link_edge_item = link_edge_iter->data;
+    link_edge = EDGE_FROM_EDGE_ITEM(link_edge_item);
+    if (((link_edge->vert_item1 == v1) && (link_edge->vert_item2 == v2)) ||
+        ((link_edge->vert_item1 == v2) && (link_edge->vert_item2 == v1))) {
       if (already_exists) {
         *already_exists = true;
       }
-      return link_edge;
+      return link_edge_item;
     }
     link_edge_iter = link_edge_iter->next;
   }
@@ -36,36 +51,26 @@ Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2, bool *already_exists) {
   if (NULL == new_edge) {
     return NULL;
   }
-  new_edge->link_faces = NULL;
-  new_edge->v1 = v1;
-  new_edge->v2 = v2;
+  new_edge->link_face_items = NULL;
+  new_edge->vert_item1 = v1;
+  new_edge->vert_item2 = v2;
 
-  new_edge->mesh_edges_list_item = list_prepend(&(mesh->edges), new_edge);
-  list_prepend(&(v1->link_edges), new_edge);
-  list_prepend(&(v2->link_edges), new_edge);
+  MeshEdgeItem *new_edge_item = list_prepend(&(mesh->edge_items), new_edge);
+
+  list_prepend(&(VERT_FROM_VERT_ITEM(v1)->link_edge_items), new_edge_item);
+  list_prepend(&(VERT_FROM_VERT_ITEM(v2)->link_edge_items), new_edge_item);
 
   if (already_exists) {
     *already_exists = false;
   }
-  return new_edge;
-}
-
-static void loop_list_prepend(Loop **loop_first_ref, Vert *vert, Edge *edge) {
-  Loop *new_loop = malloc(sizeof(Loop));
-  if (NULL == new_loop) {
-    return;
-  }
-  new_loop->vert = vert;
-  new_loop->edge = edge;
-  new_loop->next = *loop_first_ref;
-  *loop_first_ref = new_loop;
+  return new_edge_item;
 }
 
 /* TODO: function for creating n-gons */
-Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
-                  bool *already_exists) {
+MeshFaceItem *create_face(Mesh *mesh, MeshVertItem *v1, MeshVertItem *v2,
+                          MeshVertItem *v3, bool *already_exists) {
   Face *new_face = NULL;
-  Edge *e1 = NULL, *e2 = NULL, *e3 = NULL;
+  MeshEdgeItem *e1 = NULL, *e2 = NULL, *e3 = NULL;
   bool edge_already_exists[3] = {false};
 
   e1 = create_edge(mesh, v1, v2, edge_already_exists);
@@ -82,29 +87,30 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
   }
 
   /* Check if face already exists, return it if so */
-  FaceList *link_faces_iter = v1->link_faces;
-  Face *link_face = NULL;
-  Loop *link_face_loops_iter = NULL;
-  Edge *link_face_edge = NULL;
+  MeshEdgeItemList *link_faces_iter = VERT_FROM_VERT_ITEM(v1)->link_face_items;
+  MeshFaceItem *link_face_item = NULL;
+  LoopList *link_face_loops_iter = NULL;
+  MeshEdgeItem *link_face_edge_item = NULL;
   size_t num_edges_link_face = 0;
   bool edge_found[3] = {false};
 
   if (edge_already_exists[0] && edge_already_exists[1] &&
       edge_already_exists[2]) {
     while (link_faces_iter) {
-      link_face = link_faces_iter->data;
-      link_face_loops_iter = link_face->loop_first;
+      link_face_item = link_faces_iter->data;
+
+      link_face_loops_iter = FACE_FROM_FACE_ITEM(link_face_item)->loops;
 
       num_edges_link_face = 0;
       memset(edge_found, false, 3);
       while (link_face_loops_iter) {
-        link_face_edge = link_face_loops_iter->edge;
+        link_face_edge_item = ((Loop *)(link_face_loops_iter->data))->edge_item;
 
-        if (link_face_edge == e1) {
+        if (link_face_edge_item == e1) {
           edge_found[0] = true;
-        } else if (link_face_edge == e2) {
+        } else if (link_face_edge_item == e2) {
           edge_found[1] = true;
-        } else if (link_face_edge == e3) {
+        } else if (link_face_edge_item == e3) {
           edge_found[2] = true;
         }
         link_face_loops_iter = link_face_loops_iter->next;
@@ -115,8 +121,8 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
           (num_edges_link_face == 3)) {
         if (already_exists) {
           *already_exists = true;
-          return link_face;
         }
+        return link_face_item;
       }
 
       link_faces_iter = link_faces_iter->next;
@@ -127,64 +133,55 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
   if (NULL == new_face) {
     return NULL;
   }
-  new_face->loop_first = NULL;
+  new_face->loops = NULL;
   memset(new_face->normal, 0.0, 3);
 
-  loop_list_prepend(&(new_face->loop_first), v1, e1);
-  loop_list_prepend(&(new_face->loop_first), v2, e2);
-  loop_list_prepend(&(new_face->loop_first), v3, e3);
+  loop_list_prepend(&(new_face->loops), v1, e1);
+  loop_list_prepend(&(new_face->loops), v2, e2);
+  loop_list_prepend(&(new_face->loops), v3, e3);
 
-  new_face->mesh_faces_list_item = list_prepend(&(mesh->faces), new_face);
+  MeshFaceItem *new_face_item = list_prepend(&(mesh->face_items), new_face);
 
-  list_prepend(&(v1->link_faces), new_face);
-  list_prepend(&(v2->link_faces), new_face);
-  list_prepend(&(v3->link_faces), new_face);
+  list_prepend(&(VERT_FROM_VERT_ITEM(v1)->link_face_items), new_face_item);
+  list_prepend(&(VERT_FROM_VERT_ITEM(v2)->link_face_items), new_face_item);
+  list_prepend(&(VERT_FROM_VERT_ITEM(v3)->link_face_items), new_face_item);
 
-  list_prepend(&(e1->link_faces), new_face);
-  list_prepend(&(e2->link_faces), new_face);
-  list_prepend(&(e3->link_faces), new_face);
+  list_prepend(&(EDGE_FROM_EDGE_ITEM(e1)->link_face_items), new_face_item);
+  list_prepend(&(EDGE_FROM_EDGE_ITEM(e1)->link_face_items), new_face_item);
+  list_prepend(&(EDGE_FROM_EDGE_ITEM(e3)->link_face_items), new_face_item);
 
   if (already_exists) {
     *already_exists = false;
   }
-  return new_face;
+  return new_face_item;
 }
 
 /* Does not remove face vertices or edges */
-void face_remove_only(Face *face) {
-  Loop *loops_iter = face->loop_first;
-  Loop *next_item = NULL;
-  while (loops_iter) {
-    next_item = loops_iter->next;
-    list_find_remove(&(loops_iter->edge->link_faces), face);
-    list_find_remove(&(loops_iter->vert->link_faces), face);
-    free(loops_iter);
-    loops_iter = next_item;
-  }
-  free(face);
+void face_remove_keep_edges_verts(MeshFaceItem *face_item) {
+  list_free(&(FACE_FROM_FACE_ITEM(face_item)->loops), NULL);
+  list_remove_item(face_item, NULL);
 }
 
-void edge_remove(Edge *edge) {
-  list_find_remove(&(edge->v1->link_edges), edge);
-  list_find_remove(&(edge->v2->link_edges), edge);
-  list_free(&(edge->link_faces), (ListDataFreeFuncPointer)&face_remove_only);
-  free(edge);
+void edge_remove_keep_verts(MeshEdgeItem *edge_item) {
+  list_free(&(EDGE_FROM_EDGE_ITEM(edge_item)->link_face_items),
+            (ListDataFreeFuncPointer)&face_remove_keep_edges_verts);
+  list_remove_item(edge_item, NULL);
 }
 
-void vert_remove(Vert *vert) {
-  list_free(&(vert->link_edges), (ListDataFreeFuncPointer)&edge_remove);
-  list_free(&(vert->link_faces), (ListDataFreeFuncPointer)&face_remove_only);
-  free(vert);
+/* This also removes faces and edges that contain the vertex */
+void vert_remove(MeshVertItem *vert_item) {
+  list_free(&(VERT_FROM_VERT_ITEM(vert_item)->link_edge_items),
+            (ListDataFreeFuncPointer)&edge_remove_keep_verts);
+  list_free(&(VERT_FROM_VERT_ITEM(vert_item)->link_face_items),
+            (ListDataFreeFuncPointer)&face_remove_keep_edges_verts);
+  list_remove_item(vert_item, NULL);
 }
 
 void mesh_free(Mesh **mesh_ref) {
   /* TODO: free all verts/edges/faces without vert_remove (without worrying
    * about freeing linked geo, as all geo would be freed anyways)*/
-
-  /* FIXME: not all data is removed */
-  list_free(&((*mesh_ref)->vertices), (ListDataFreeFuncPointer)&vert_remove);
-  list_free(&((*mesh_ref)->edges), NULL);
-  list_free(&((*mesh_ref)->faces), NULL);
+  // list_free(&((*mesh_ref)->vert_items),
+  // (ListDataFreeFuncPointer)&vert_remove);
   free(*mesh_ref);
   *mesh_ref = NULL;
 }

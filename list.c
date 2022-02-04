@@ -7,8 +7,13 @@ List *list_prepend(List **head_ref, void *data) {
   if (NULL == new_elem) {
     return NULL;
   }
+  List *head = *head_ref;
+  if (NULL != head) {
+    head->prev = new_elem;
+  }
   new_elem->data = data;
-  new_elem->next = *head_ref;
+  new_elem->next = head;
+  new_elem->prev = NULL;
   *head_ref = new_elem;
   return new_elem;
 }
@@ -23,22 +28,18 @@ List *list_find(List *head, void *data) {
   return NULL;
 }
 
-void list_find_remove(List **head_ref, void *data) {
-  if ((*head_ref)->data == data) {
-    *head_ref = (*head_ref)->next;
-    return;
+/* Removes item and frees its memory */
+void list_remove_item(List *item, ListDataFreeFuncPointer data_free_func) {
+  if (NULL != item->prev) {
+    item->prev->next = item->next;
   }
-  List *head = *head_ref;
-  while (head) {
-    if (NULL != head->next) {
-      if (head->next->data == data) {
-        free(head->next);
-        head->next = head->next->next;
-        return;
-      }
-    }
-    head = head->next;
+  if (NULL != item->next) {
+    item->next->prev = item->prev;
   }
+  if (NULL != data_free_func) {
+    data_free_func(item->data);
+  }
+  free(item);
 }
 
 void list_free(List **head_ref, ListDataFreeFuncPointer data_free_func) {

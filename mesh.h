@@ -5,59 +5,53 @@
 
 #include "list.h"
 
-typedef List VertList;
-typedef List EdgeList;
-typedef List FaceList;
+typedef List MeshVertItem;
+typedef List MeshEdgeItem;
+typedef List MeshFaceItem;
+
+typedef List MeshVertItemList;
+typedef List MeshEdgeItemList;
+typedef List MeshFaceItemList;
+
+typedef List LoopList;
 
 typedef struct Vert {
   float location[3];
-
-  EdgeList *link_edges;
-  FaceList *link_faces;
-
-  /* To avoid searching all mesh vertices when freeing */
-  VertList *mesh_vertices_list_item;
+  MeshEdgeItemList *link_edge_items;
+  MeshFaceItemList *link_face_items;
 } Vert;
 
 typedef struct Edge {
-  Vert *v1;
-  Vert *v2;
-  FaceList *link_faces;
-
-  /* To avoid searching all mesh edges when freeing */
-  EdgeList *mesh_edges_list_item;
+  MeshVertItem *vert_item1;
+  MeshVertItem *vert_item2;
+  MeshFaceItemList *link_face_items;
 } Edge;
 
 typedef struct Loop {
-  Vert *vert;
-  Edge *edge;
-
-  struct Loop *next;
+  MeshVertItem *vert_item;
+  MeshEdgeItem *edge_item;
 } Loop;
 
 typedef struct Face {
   float normal[3];
-
-  Loop *loop_first;
-
-  /* To avoid searching all mesh faces when freeing */
-  FaceList *mesh_faces_list_item;
+  LoopList *loops;
 } Face;
 
 typedef struct Mesh {
-  VertList *vertices;
-  EdgeList *edges;
-  FaceList *faces;
+  MeshVertItem *vert_items;
+  MeshVertItem *edge_items;
+  MeshVertItem *face_items;
 } Mesh;
 
-Vert *create_vertex(Mesh *mesh, float location[3]);
-Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2, bool *already_exists);
-Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
-                  bool *already_exists);
+MeshVertItem *create_vertex(Mesh *mesh, float location[3]);
+MeshEdgeItem *create_edge(Mesh *mesh, MeshVertItem *v1, MeshVertItem *v2,
+                          bool *already_exists);
+MeshFaceItem *create_face(Mesh *mesh, MeshVertItem *v1, MeshVertItem *v2,
+                          MeshVertItem *v3, bool *already_exists);
 
-void vert_remove(Vert *vert);
-void face_remove_only(Face *face);
-void edge_remove(Edge *edge);
+void vert_remove(MeshVertItem *vert_item);
+void face_remove_keep_edges_verts(MeshFaceItem *face_item);
+void edge_remove_keep_verts(MeshEdgeItem *edge_item);
 
 void mesh_free(Mesh **mesh_ref);
 

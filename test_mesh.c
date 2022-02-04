@@ -10,17 +10,17 @@ int main(int argc, char **argv) {
     puts("Failed to allocate memory for Mesh");
     return 1;
   }
-  mesh->vertices = NULL;
-  mesh->edges = NULL;
-  mesh->faces = NULL;
+  mesh->vert_items = NULL;
+  mesh->edge_items = NULL;
+  mesh->face_items = NULL;
 
-  Vert *v1 = create_vertex(mesh, (float[3]){0.0, 1.0, 0.0});
-  Vert *v2 = create_vertex(mesh, (float[3]){-1.0, 0.0, 0.0});
-  Vert *v3 = create_vertex(mesh, (float[3]){1.0, 0.0, 0.0});
-  Face *f1 = create_face(mesh, v1, v2, v3, NULL);
+  MeshVertItem *v1 = create_vertex(mesh, (float[3]){0.0, 1.0, 0.0});
+  MeshVertItem *v2 = create_vertex(mesh, (float[3]){-1.0, 0.0, 0.0});
+  MeshVertItem *v3 = create_vertex(mesh, (float[3]){1.0, 0.0, 0.0});
+  MeshFaceItem *f1 = create_face(mesh, v1, v2, v3, NULL);
 
   bool already_exists = false;
-  Face *f2 = create_face(mesh, v1, v2, v3, &already_exists);
+  MeshFaceItem *f2 = create_face(mesh, v1, v2, v3, &already_exists);
 
   if (already_exists) {
     puts("Duplicate faces");
