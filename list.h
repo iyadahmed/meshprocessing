@@ -1,11 +1,6 @@
 #ifndef LIST_H
 #define LIST_H
 
-/* From Blender */
-#define LIST_ITER(type, var, list)                                             \
-  for (type var = (type)((list)->first); var != NULL;                          \
-       var = (type)(((Link *)(var))->next))
-
 typedef void (*ListDataFreeFuncPointer)(void *);
 
 typedef struct List {
