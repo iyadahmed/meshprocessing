@@ -14,12 +14,18 @@ typedef struct Vert {
 
   EdgeList *link_edges;
   FaceList *link_faces;
+
+  /* To avoid searching all mesh vertices when freeing */
+  VertList *mesh_vertices_list_item;
 } Vert;
 
 typedef struct Edge {
   Vert *v1;
   Vert *v2;
   FaceList *link_faces;
+
+  /* To avoid searching all mesh edges when freeing */
+  EdgeList *mesh_edges_list_item;
 } Edge;
 
 typedef struct Loop {
@@ -33,6 +39,9 @@ typedef struct Face {
   float normal[3];
 
   Loop *loop_first;
+
+  /* To avoid searching all mesh faces when freeing */
+  FaceList *mesh_faces_list_item;
 } Face;
 
 typedef struct Mesh {

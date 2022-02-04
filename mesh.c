@@ -13,7 +13,7 @@ Vert *create_vertex(Mesh *mesh, float location[3]) {
   new_vert->link_edges = NULL;
   new_vert->link_faces = NULL;
   memcpy(new_vert->location, location, sizeof(float[3]));
-  list_prepend(&(mesh->vertices), new_vert);
+  new_vert->mesh_vertices_list_item = list_prepend(&(mesh->vertices), new_vert);
   return new_vert;
 }
 
@@ -40,7 +40,7 @@ Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2, bool *already_exists) {
   new_edge->v1 = v1;
   new_edge->v2 = v2;
 
-  list_prepend(&(mesh->edges), new_edge);
+  new_edge->mesh_edges_list_item = list_prepend(&(mesh->edges), new_edge);
   list_prepend(&(v1->link_edges), new_edge);
   list_prepend(&(v2->link_edges), new_edge);
 
@@ -134,7 +134,7 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
   loop_list_prepend(&(new_face->loop_first), v2, e2);
   loop_list_prepend(&(new_face->loop_first), v3, e3);
 
-  list_prepend(&(mesh->faces), new_face);
+  new_face->mesh_faces_list_item = list_prepend(&(mesh->faces), new_face);
 
   list_prepend(&(v1->link_faces), new_face);
   list_prepend(&(v2->link_faces), new_face);
