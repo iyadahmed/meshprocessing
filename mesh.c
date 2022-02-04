@@ -15,6 +15,8 @@ static void loop_list_prepend(LoopList **head_ref, MeshVertItem *vert_item,
   if (NULL == loop) {
     return;
   }
+  loop->vert_item = vert_item;
+  loop->edge_item = edge_item;
   list_prepend(head_ref, loop);
 }
 
