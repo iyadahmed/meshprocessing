@@ -17,12 +17,6 @@ Vert *create_vertex(Mesh *mesh, float location[3]) {
   return new_vert;
 }
 
-static void vert_free(Vert *vert) {
-  list_free(&(vert->link_edges), NULL);
-  list_free(&(vert->link_faces), NULL);
-  free(vert);
-}
-
 Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2, bool *already_exists) {
   EdgeList *link_edge_iter = v1->link_edges;
   Edge *link_edge = NULL;
@@ -54,11 +48,6 @@ Edge *create_edge(Mesh *mesh, Vert *v1, Vert *v2, bool *already_exists) {
     *already_exists = false;
   }
   return new_edge;
-}
-
-static void edge_free(Edge *edge) {
-  list_free(&(edge->link_faces), NULL);
-  free(edge);
 }
 
 static void loop_list_prepend(Loop **loop_first_ref, Vert *vert, Edge *edge) {
@@ -161,21 +150,41 @@ Face *create_face(Mesh *mesh, Vert *v1, Vert *v2, Vert *v3,
   return new_face;
 }
 
-static void face_free(Face *face) {
+/* Does not remove face vertices or edges */
+void face_remove_only(Face *face) {
   Loop *loops_iter = face->loop_first;
   Loop *next_item = NULL;
   while (loops_iter) {
     next_item = loops_iter->next;
+    list_find_remove(&(loops_iter->edge->link_faces), face);
+    list_find_remove(&(loops_iter->vert->link_faces), face);
     free(loops_iter);
     loops_iter = next_item;
   }
   free(face);
 }
 
+void edge_remove(Edge *edge) {
+  list_find_remove(&(edge->v1->link_edges), edge);
+  list_find_remove(&(edge->v2->link_edges), edge);
+  list_free(&(edge->link_faces), (ListDataFreeFuncPointer)&face_remove_only);
+  free(edge);
+}
+
+void vert_remove(Vert *vert) {
+  list_free(&(vert->link_edges), (ListDataFreeFuncPointer)&edge_remove);
+  list_free(&(vert->link_faces), (ListDataFreeFuncPointer)&face_remove_only);
+  free(vert);
+}
+
 void mesh_free(Mesh **mesh_ref) {
-  list_free(&((*mesh_ref)->vertices), (void (*)(void *))vert_free);
-  list_free(&((*mesh_ref)->edges), (void (*)(void *))edge_free);
-  list_free(&((*mesh_ref)->faces), (void (*)(void *))face_free);
+  /* TODO: free all verts/edges/faces without vert_remove (without worrying
+   * about freeing linked geo, as all geo would be freed anyways)*/
+
+  /* FIXME: not all data is removed */
+  list_free(&((*mesh_ref)->vertices), (ListDataFreeFuncPointer)&vert_remove);
+  list_free(&((*mesh_ref)->edges), NULL);
+  list_free(&((*mesh_ref)->faces), NULL);
   free(*mesh_ref);
   *mesh_ref = NULL;
 }

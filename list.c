@@ -22,7 +22,25 @@ List *list_find(List *head, void *data) {
   return NULL;
 }
 
-void list_free(List **head_ref, void (*data_free_func)(void *)) {
+void list_find_remove(List **head_ref, void *data) {
+  if ((*head_ref)->data == data) {
+    *head_ref = (*head_ref)->next;
+    return;
+  }
+  List *head = *head_ref;
+  while (head) {
+    if (NULL != head->next) {
+      if (head->next->data == data) {
+        free(head->next);
+        head->next = head->next->next;
+        return;
+      }
+    }
+    head = head->next;
+  }
+}
+
+void list_free(List **head_ref, ListDataFreeFuncPointer data_free_func) {
   if (NULL == *head_ref) {
     return;
   }
