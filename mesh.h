@@ -49,10 +49,6 @@ MeshEdgeItem *create_edge(Mesh *mesh, MeshVertItem *v1, MeshVertItem *v2,
 MeshFaceItem *create_face(Mesh *mesh, MeshVertItem *v1, MeshVertItem *v2,
                           MeshVertItem *v3, bool *already_exists);
 
-void vert_remove(MeshVertItem *vert_item);
-void face_remove_keep_edges_verts(MeshFaceItem *face_item);
-void edge_remove_keep_verts(MeshEdgeItem *edge_item);
-
 void mesh_free(Mesh **mesh_ref);
 
 #endif
