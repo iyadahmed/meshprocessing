@@ -18,7 +18,6 @@ int main(int argc, char **argv) {
   bool already_exists = false;
   auto f2 = create_face(mesh, v1, v2, v3, &already_exists);
 
-  /* FIXME: duplicate faces are not detected */
   if (already_exists) {
     std::cout << "Duplicate faces" << std::endl;
   }

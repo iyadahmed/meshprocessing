@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "mesh.hpp"
 
 std::list<VertData>::iterator create_vertex(Mesh *mesh, float location[3]) {
@@ -62,9 +64,13 @@ std::list<FaceData>::iterator create_face(Mesh *mesh,
       edge_found[1] = false;
       edge_found[2] = false;
       for (auto loop : (*link_face).loops) {
-        edge_found[0] = (loop.edge == e1);
-        edge_found[1] = (loop.edge == e2);
-        edge_found[2] = (loop.edge == e3);
+        if (loop.edge == e1) {
+          edge_found[0] = true;
+        } else if (loop.edge == e2) {
+          edge_found[1] = true;
+        } else if (loop.edge == e3) {
+          edge_found[2] = true;
+        }
         num_edges_link_face++;
       }
       if (edge_found[0] && edge_found[1] && edge_found[2] &&
