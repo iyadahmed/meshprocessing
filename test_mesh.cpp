@@ -24,6 +24,8 @@ int main(int argc, char **argv) {
 
   printf("Face1: %p\nFace2: %p\n", &(*f1), &(*f2));
 
+  face_remove(mesh, f1);
+
   delete mesh;
   return 0;
 }

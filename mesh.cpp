@@ -104,3 +104,12 @@ std::list<FaceData>::iterator create_face(Mesh *mesh,
 
   return new_face;
 }
+
+void face_remove(Mesh *mesh, std::list<FaceData>::iterator &face) {
+  for (auto loop : face->loops) {
+    loop.edge->link_faces.remove(face);
+    loop.vert->link_faces.remove(face);
+  }
+  mesh->faces.erase(face);
+  face = mesh->faces.end();
+}

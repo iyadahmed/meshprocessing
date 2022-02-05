@@ -46,4 +46,6 @@ std::list<FaceData>::iterator create_face(Mesh *mesh,
                                           std::list<VertData>::iterator v3,
                                           bool *already_exists);
 
+void face_remove(Mesh *mesh, std::list<FaceData>::iterator &face);
+
 #endif

@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.18)
 
 project(meshprocessing)
 set(TARGET meshprocessing PROPERTY C_STANDARD 11)
+set(TARGET meshprocessing PROPERTY CXX_STANDARD 11)
 
 add_executable(test_stl
                test_stl.c
