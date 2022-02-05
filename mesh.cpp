@@ -17,10 +17,8 @@ std::list<EdgeData>::iterator create_edge(Mesh *mesh,
                                           std::list<VertData>::iterator v1,
                                           std::list<VertData>::iterator v2,
                                           bool *already_exists) {
-  EdgeData ed;
-  for (auto e : (*v1).link_edges) {
-    ed = *e;
-    if ((ed.v1 == v1 && ed.v2 == v2) || (ed.v1 == v2 && ed.v2 == v1)) {
+  for (auto e : v1->link_edges) {
+    if ((e->v1 == v1 && e->v2 == v2) || (e->v1 == v2 && e->v2 == v1)) {
       if (already_exists) {
         *already_exists = true;
       }
@@ -35,8 +33,8 @@ std::list<EdgeData>::iterator create_edge(Mesh *mesh,
   }
   mesh->edges.push_front(new_edge_data);
   auto e = mesh->edges.begin();
-  (*v1).link_edges.push_front(e);
-  (*v2).link_edges.push_front(e);
+  v1->link_edges.push_front(e);
+  v2->link_edges.push_front(e);
   return e;
 }
 
@@ -58,12 +56,12 @@ std::list<FaceData>::iterator create_face(Mesh *mesh,
 
   if (edge_already_exists[0] && edge_already_exists[1] &&
       edge_already_exists[2]) {
-    for (auto link_face : (*v1).link_faces) {
+    for (auto link_face : v1->link_faces) {
       num_edges_link_face = 0;
       edge_found[0] = false;
       edge_found[1] = false;
       edge_found[2] = false;
-      for (auto loop : (*link_face).loops) {
+      for (auto loop : link_face->loops) {
         if (loop.edge == e1) {
           edge_found[0] = true;
         } else if (loop.edge == e2) {
@@ -90,13 +88,13 @@ std::list<FaceData>::iterator create_face(Mesh *mesh,
 
   mesh->faces.push_front(new_face_data);
   auto new_face = mesh->faces.begin();
-  (*v1).link_faces.push_front(new_face);
-  (*v2).link_faces.push_front(new_face);
-  (*v3).link_faces.push_front(new_face);
+  v1->link_faces.push_front(new_face);
+  v2->link_faces.push_front(new_face);
+  v3->link_faces.push_front(new_face);
 
-  (*e1).link_faces.push_front(new_face);
-  (*e2).link_faces.push_front(new_face);
-  (*e3).link_faces.push_front(new_face);
+  e1->link_faces.push_front(new_face);
+  e2->link_faces.push_front(new_face);
+  e3->link_faces.push_front(new_face);
 
   if (already_exists) {
     *already_exists = false;
