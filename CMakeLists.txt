@@ -6,22 +6,18 @@ set(TARGET meshprocessing PROPERTY C_STANDARD 11)
 add_executable(test_stl
                test_stl.c
                stl.c
-               mesh.c
+               mesh.cpp
                list.h
                
                stl.h
-               mesh.h
+               mesh.hpp
                list.c)
 
 add_executable(test_mesh
-               test_mesh.c
-               stl.c
-               mesh.c
-               list.h
-               
-               stl.h
-               mesh.h
-               list.c)
+               test_mesh.cpp
+               mesh.cpp
+               mesh.hpp
+               )
 
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
     # link libmath
