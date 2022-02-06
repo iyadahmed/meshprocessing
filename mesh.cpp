@@ -3,13 +3,11 @@
 #include "mesh.hpp"
 
 std::list<VertData>::iterator create_vertex(Mesh *mesh, float location[3]) {
-
   VertData new_vert_data;
   new_vert_data.location[0] = location[0];
   new_vert_data.location[1] = location[1];
   new_vert_data.location[2] = location[2];
   mesh->verts.push_front(new_vert_data);
-
   return mesh->verts.begin();
 }
 
