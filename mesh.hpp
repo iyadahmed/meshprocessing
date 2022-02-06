@@ -38,13 +38,11 @@ struct Mesh {
 std::list<VertData>::iterator create_vertex(Mesh *mesh, float location[3]);
 std::list<EdgeData>::iterator create_edge(Mesh *mesh,
                                           std::list<VertData>::iterator v1,
-                                          std::list<VertData>::iterator v2,
-                                          bool *already_exists);
+                                          std::list<VertData>::iterator v2);
 std::list<FaceData>::iterator create_face(Mesh *mesh,
                                           std::list<VertData>::iterator v1,
                                           std::list<VertData>::iterator v2,
-                                          std::list<VertData>::iterator v3,
-                                          bool *already_exists);
+                                          std::list<VertData>::iterator v3);
 
 void face_remove(Mesh *mesh, std::list<FaceData>::iterator &face);
 
