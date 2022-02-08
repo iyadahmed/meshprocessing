@@ -13,8 +13,8 @@ int main(int argc, char **argv) {
   auto v1 = create_vertex(mesh, p1);
   auto v2 = create_vertex(mesh, p2);
   auto v3 = create_vertex(mesh, p3);
-  auto f1 = create_face(mesh, v1, v2, v3);
-  auto f2 = create_face(mesh, v1, v2, v3);
+  auto f1 = create_face_tri(mesh, v1, v2, v3);
+  auto f2 = create_face_tri(mesh, v1, v2, v3);
 
   printf("Face1: %p\nFace2: %p\n", &(*f1), &(*f2));
 

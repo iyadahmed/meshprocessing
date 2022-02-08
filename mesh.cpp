@@ -1,4 +1,6 @@
 #include <iostream>
+#include <list>
+#include <vector>
 
 #include "mesh.hpp"
 
@@ -25,10 +27,10 @@ std::list<EdgeData>::iterator create_edge(Mesh *mesh,
 }
 
 /* TODO: function for creating n-gons */
-std::list<FaceData>::iterator create_face(Mesh *mesh,
-                                          std::list<VertData>::iterator v1,
-                                          std::list<VertData>::iterator v2,
-                                          std::list<VertData>::iterator v3) {
+std::list<FaceData>::iterator
+create_face_tri(Mesh *mesh, std::list<VertData>::iterator v1,
+                std::list<VertData>::iterator v2,
+                std::list<VertData>::iterator v3) {
 
   auto e1 = create_edge(mesh, v1, v2);
   auto e2 = create_edge(mesh, v2, v3);

@@ -39,7 +39,7 @@ std::list<VertData>::iterator create_vertex(Mesh *mesh, float location[3]);
 std::list<EdgeData>::iterator create_edge(Mesh *mesh,
                                           std::list<VertData>::iterator v1,
                                           std::list<VertData>::iterator v2);
-std::list<FaceData>::iterator create_face(Mesh *mesh,
+std::list<FaceData>::iterator create_face_tri(Mesh *mesh,
                                           std::list<VertData>::iterator v1,
                                           std::list<VertData>::iterator v2,
                                           std::list<VertData>::iterator v3);
