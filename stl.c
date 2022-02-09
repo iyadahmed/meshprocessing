@@ -32,33 +32,6 @@
 
 #include "stl.h"
 
-static void list_prepend_triangle(TriangleList **head_ref, Triangle *tri) {
-  TriangleList *elem = malloc(sizeof(TriangleList));
-  if (NULL == elem) {
-    return;
-  }
-  Triangle *data = malloc(sizeof(Triangle));
-  if (NULL == data) {
-    return;
-  }
-  memcpy(data, tri, sizeof(Triangle));
-  elem->data = data;
-  elem->next = *head_ref;
-  *head_ref = elem;
-}
-
-void free_triangles(TriangleList **head_ref) {
-  TriangleList *head = *head_ref;
-  TriangleList *tmp = NULL;
-  while (head) {
-    tmp = head;
-    head = head->next;
-    free(tmp->data);
-    free(tmp);
-  }
-  *head_ref = NULL;
-}
-
 const size_t BINARY_HEADER = 80;
 const size_t BINARY_STRIDE = 12 * 4 + 2;
 
@@ -79,11 +52,16 @@ static bool is_ascii_stl(FILE *file) {
   return (file_size != BINARY_HEADER + 4 + BINARY_STRIDE * num_tri);
 }
 
-static TriangleList *read_stl_binary(FILE *file) {
+typedef struct STLBinaryTri {
+  float normal[3];
+  float verts[3][3];
+} STLBinaryTri;
+
+static Triangle *read_stl_binary(FILE *file) {
   Triangle current_triangle = {0};
-  /* Could allocate a triangle array instead,
-   * but for sake of keeping result of ASCII and Binary reader the same */
-  TriangleList *triangle_list = NULL;
+  Triangle *triangle_list = NULL;
+
+  STLBinaryTri stl_tri = {0};
 
   fseek(file, BINARY_HEADER, SEEK_SET);
   uint32_t num_tri = 0;
@@ -92,10 +70,13 @@ static TriangleList *read_stl_binary(FILE *file) {
   }
   /* TODO: switch num_tri endianess if machine is not little endian */
   for (int i = 0; i < num_tri; i++) {
-    if (fread(&current_triangle, sizeof(Triangle), 1, file) == 0) {
+    if (fread(&stl_tri, sizeof(STLBinaryTri), 1, file) == 0) {
       return triangle_list;
     }
-    list_prepend_triangle(&triangle_list, &current_triangle);
+    /* TODO: get rid of extra copies */
+    memcpy(current_triangle.vertices, stl_tri.verts, sizeof(float[3][3]));
+    memcpy(current_triangle.normal, stl_tri.normal, sizeof(float[3]));
+    prepend_triangle(&triangle_list, &current_triangle);
     /* TODO: switch floats endianess if machine is not little endian */
     /* Skip "Attribute byte count" */
     if (fseek(file, sizeof(uint16_t), SEEK_CUR) != 0) {
@@ -138,9 +119,9 @@ static char *lstrip_token_unsafe(char *str) {
   return str_stripped;
 }
 
-static TriangleList *read_stl_ascii(FILE *file) {
+static Triangle *read_stl_ascii(FILE *file) {
   Triangle current_triangle = {0};
-  TriangleList *triangle_list = NULL;
+  Triangle *triangle_list = NULL;
 
   char line_buf[1024] = {0};
   char *line_stripped = NULL;
@@ -175,23 +156,25 @@ static TriangleList *read_stl_ascii(FILE *file) {
         }
         line_stripped = lstrip_unsafe(line_buf);
       }
-      list_prepend_triangle(&triangle_list, &current_triangle);
+      prepend_triangle(&triangle_list, &current_triangle);
     }
   }
   return triangle_list;
 }
 
-TriangleList *read_stl(char *filepath) {
+Triangle *read_stl(char *filepath) {
+  Triangle *tri_list = NULL;
   /* TODO: make fopen work for utf8 paths on Windows */
   FILE *file = fopen(filepath, "rb");
-  if (NULL == file) {
+  if (file == NULL) {
     return NULL;
   }
   /* TODO: check if STL is valid */
   if (is_ascii_stl(file)) {
-    return read_stl_ascii(file);
+    tri_list = read_stl_ascii(file);
   } else {
-    return read_stl_binary(file);
+    tri_list = read_stl_binary(file);
   }
   fclose(file);
+  return tri_list;
 }

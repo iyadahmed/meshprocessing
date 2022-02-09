@@ -7,14 +7,17 @@ set(TARGET meshprocessing PROPERTY CXX_STANDARD 11)
 add_executable(test_stl
                test_stl.c
                stl.c
-               list.h
+               mesh.c
                
                stl.h
-               list.c)
+               mesh.h)
+
+# add_executable(test_mesh mesh.c mesh.h)
 
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
     # link libmath
     target_link_libraries(test_stl m) 
+    # target_link_libraries(test_mesh m) 
     add_compile_options("-Ofast")
     add_compile_options("-march=native")
 elseif(MSVC)

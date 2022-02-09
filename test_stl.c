@@ -8,25 +8,27 @@ int main(int argc, char **argv) {
     puts("Usage: test_stl path_to_stl.stl");
     return 1;
   }
-  TriangleList *tri_list = read_stl(argv[1]);
-  if (NULL == tri_list) {
+  Triangle *tri_list = read_stl(argv[1]);
+  if (tri_list == NULL) {
     puts("Failed to read STL");
     return 1;
   }
+
+  /* Print mesh's bounding box */
   float bb_min[3] = {INFINITY};
   float bb_max[3] = {-INFINITY};
   size_t num_tri = 0;
-  Triangle *tri;
-  while (tri_list) {
+
+  Triangle *tri_list_iter = tri_list;
+  while (tri_list_iter) {
     for (int i = 0; i < 3; i++) {
-      tri = (Triangle *)(tri_list->data);
-      float *v = tri->vertices[i];
+      float *v = tri_list_iter->vertices[i];
       for (int j = 0; j < 3; j++) {
         bb_min[j] = fminf(v[j], bb_min[j]);
         bb_max[j] = fmaxf(v[j], bb_max[j]);
       }
     }
-    tri_list = tri_list->next;
+    tri_list_iter = tri_list_iter->next;
     num_tri++;
   }
   printf("Number of triangles: %lu\n", num_tri);
