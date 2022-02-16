@@ -165,7 +165,7 @@ Buffer<STLTriangle> *read_stl(char *filepath) {
   Buffer<STLTriangle> *triangle_buffer = NULL;
   /* TODO: check if STL is valid */
   if (is_ascii_stl(file)) {
-    // triangle_buffer = read_stl_ascii(file);
+    triangle_buffer = read_stl_ascii(file);
   } else {
     triangle_buffer = read_stl_binary(file);
   }
