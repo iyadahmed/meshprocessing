@@ -3,15 +3,6 @@
 
 #include <stddef.h>
 
-/* inception of an idea */
-#define ListNodeType(data_type)                                                                                        \
-  typedef struct ListNode {                                                                                            \
-    ##data_type data;                                                                                                  \
-                                                                                                                       \
-    struct List *prev;                                                                                                 \
-    struct List *next;                                                                                                 \
-  } ListNode;
-
 typedef struct Buffer {
   void *mem_start;
   void *mem_current;
