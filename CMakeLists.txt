@@ -5,14 +5,12 @@ set(TARGET meshprocessing PROPERTY C_STANDARD 11)
 set(TARGET meshprocessing PROPERTY CXX_STANDARD 11)
 
 add_executable(test_stl
-               test_stl.c
-               stl.c
-               mesh.c
-               buffer.c
+               test_stl.cpp
+               stl.cpp
+               buffer.cpp
                
-               stl.h
-               mesh.h
-               buffer.h)
+               stl.hpp
+               buffer.hpp)
 
 # add_executable(test_mesh mesh.c mesh.h)
 
