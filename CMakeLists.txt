@@ -8,9 +8,11 @@ add_executable(test_stl
                test_stl.c
                stl.c
                mesh.c
+               buffer.c
                
                stl.h
-               mesh.h)
+               mesh.h
+               buffer.h)
 
 # add_executable(test_mesh mesh.c mesh.h)
 

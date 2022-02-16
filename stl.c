@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "buffer.h"
 #include "stl.h"
 
 const size_t BINARY_HEADER = 80;
@@ -57,10 +58,8 @@ typedef struct STLBinaryTri {
   float verts[3][3];
 } STLBinaryTri;
 
-static Triangle *read_stl_binary(FILE *file) {
-  Triangle current_triangle = {0};
-  Triangle *triangle_list = NULL;
-
+static Buffer *read_stl_binary(FILE *file) {
+  STLTriangle current_triangle = {0};
   STLBinaryTri stl_tri = {0};
 
   fseek(file, BINARY_HEADER, SEEK_SET);
@@ -68,22 +67,25 @@ static Triangle *read_stl_binary(FILE *file) {
   if (fread(&num_tri, sizeof(uint32_t), 1, file) < 1) {
     return NULL;
   }
+
+  Buffer *triangle_buffer = buffer_create(sizeof(STLTriangle) * num_tri);
   /* TODO: switch num_tri endianess if machine is not little endian */
   for (int i = 0; i < num_tri; i++) {
     if (fread(&stl_tri, sizeof(STLBinaryTri), 1, file) == 0) {
-      return triangle_list;
+      return triangle_buffer;
     }
     /* TODO: get rid of extra copies */
     memcpy(current_triangle.vertices, stl_tri.verts, sizeof(float[3][3]));
     memcpy(current_triangle.normal, stl_tri.normal, sizeof(float[3]));
-    prepend_triangle(&triangle_list, &current_triangle);
+    buffer_append(triangle_buffer, &current_triangle, sizeof(STLTriangle));
+
     /* TODO: switch floats endianess if machine is not little endian */
     /* Skip "Attribute byte count" */
     if (fseek(file, sizeof(uint16_t), SEEK_CUR) != 0) {
-      return triangle_list;
+      return triangle_buffer;
     }
   }
-  return triangle_list;
+  return triangle_buffer;
 }
 
 static int parse_float3_str(char *buf, float out[3]) {
@@ -119,9 +121,9 @@ static char *lstrip_token_unsafe(char *str) {
   return str_stripped;
 }
 
-static Triangle *read_stl_ascii(FILE *file) {
-  Triangle current_triangle = {0};
-  Triangle *triangle_list = NULL;
+static Buffer *read_stl_ascii(FILE *file) {
+  STLTriangle current_triangle = {0};
+  Buffer *triangle_buffer = buffer_create(sizeof(STLTriangle) * 10240);
 
   char line_buf[1024] = {0};
   char *line_stripped = NULL;
@@ -141,40 +143,40 @@ static Triangle *read_stl_ascii(FILE *file) {
       /* Skip "normal" */
       facet_normal_str = lstrip_token_unsafe(facet_normal_str);
       if (parse_float3_str(facet_normal_str, current_triangle.normal) != 0) {
-        return triangle_list;
+        return triangle_buffer;
       }
     } else if (strncmp(line_stripped, "vertex", 6) == 0) {
       for (int i = 0; i < 3; i++) {
         /* Skip "vertex" */
         vertex_location_str = lstrip_token_unsafe(line_stripped);
-        if (parse_float3_str(vertex_location_str,
-                             current_triangle.vertices[i]) != 0) {
-          return triangle_list;
+        if (parse_float3_str(vertex_location_str, current_triangle.vertices[i]) != 0) {
+          return triangle_buffer;
         }
         if (fgets(line_buf, 1024, file) == NULL) {
-          return triangle_list;
+          return triangle_buffer;
         }
         line_stripped = lstrip_unsafe(line_buf);
       }
-      prepend_triangle(&triangle_list, &current_triangle);
+      buffer_append(triangle_buffer, &current_triangle, sizeof(STLTriangle));
     }
   }
-  return triangle_list;
+  return triangle_buffer;
 }
 
-Triangle *read_stl(char *filepath) {
-  Triangle *tri_list = NULL;
+Buffer *read_stl(char *filepath) {
   /* TODO: make fopen work for utf8 paths on Windows */
   FILE *file = fopen(filepath, "rb");
   if (file == NULL) {
     return NULL;
   }
+
+  Buffer *triangle_buffer = NULL;
   /* TODO: check if STL is valid */
   if (is_ascii_stl(file)) {
-    tri_list = read_stl_ascii(file);
+    triangle_buffer = read_stl_ascii(file);
   } else {
-    tri_list = read_stl_binary(file);
+    triangle_buffer = read_stl_binary(file);
   }
   fclose(file);
-  return tri_list;
+  return triangle_buffer;
 }
