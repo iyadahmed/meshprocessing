@@ -1,3 +1,7 @@
+#ifndef MESH_HPP
+#define MESH_HPP
+
+#include <cstdint>
 #include <unordered_map>
 #include <vector>
 
@@ -13,11 +17,12 @@ struct Edge {
 };
 
 struct Face {
+  float custom_normal[3];
   std::vector<uint32_t> verts_ids;
   std::vector<uint32_t> edges_ids;
 };
 
-// TODO: reduce memory allocations when creating vertices (insertind into unordered dict)
+// TODO: reduce memory allocations when creating vertices (inserting into unordered dict)
 struct Mesh {
 private:
   uint32_t vert_id_counter;
@@ -29,9 +34,16 @@ public:
   std::unordered_map<uint32_t, Edge> edges;
   std::unordered_map<uint32_t, Face> faces;
 
-  inline uint32_t vert_create(float x, float y, float z) {
+  inline uint32_t vert_create(float location[3]) {
     auto vert_id = vert_id_counter;
-    verts[vert_id] = {{x, y, z}, {}, {}};
+    verts[vert_id] = {{location[0], location[1], location[2]}, {}, {}};
+    vert_id_counter++;
+    return vert_id;
+  }
+
+  inline uint32_t vert_create(float v1, float v2, float v3) {
+    auto vert_id = vert_id_counter;
+    verts[vert_id] = {{v1, v2, v3}, {}, {}};
     vert_id_counter++;
     return vert_id;
   }
@@ -71,6 +83,7 @@ public:
     auto e3_id = edge_create(vert_ids[2], vert_ids[0]);
     auto face_id = face_id_counter;
     faces[face_id] = {
+        {},
         {vert_ids[0], vert_ids[0], vert_ids[0]},
         {e1_id, e2_id, e3_id},
     };
@@ -86,3 +99,5 @@ public:
     // TODO
   }
 };
+
+#endif
