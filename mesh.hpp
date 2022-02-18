@@ -1,105 +1,88 @@
-#include <algorithm>
+#include <unordered_map>
 #include <vector>
-
-#include "buffer.hpp"
-
-struct Vert;
-struct Edge;
-struct Face;
 
 struct Vert {
   float location[3];
-  std::vector<Edge *> link_edges;
-  std::vector<Face *> link_faces;
-
-  bool operator==(const Vert &other) {
-    // Compare by address since vertices are supposed to belong to a mesh
-    return this == &other;
-  }
+  std::vector<uint32_t> link_edges_ids;
+  std::vector<uint32_t> link_faces_ids;
 };
 
 struct Edge {
-  Vert *v1, *v2;
-  std::vector<Face *> link_faces;
-
-  bool operator==(const Edge &other) {
-    // Compare by address since edges are supposed to belong to a mesh
-    return this == &other;
-  }
+  uint32_t v1_id, v2_id;
+  std::vector<uint32_t> link_faces_ids;
 };
 
 struct Face {
-  std::vector<Vert *> verts;
-  std::vector<Edge *> edges;
-
-  bool operator==(const Face &other) {
-    // Compare by address since faces are supposed to belong to a mesh
-    return this == &other;
-  }
+  std::vector<uint32_t> verts_ids;
+  std::vector<uint32_t> edges_ids;
 };
 
+// TODO: reduce memory allocations when creating vertices (insertind into unordered dict)
 struct Mesh {
-  std::vector<Vert> verts;
-  std::vector<Edge> edges;
-  std::vector<Face> faces;
+private:
+  uint32_t vert_id_counter;
+  uint32_t edge_id_counter;
+  uint32_t face_id_counter;
 
-  inline Vert *vert_create(float x, float y, float z) {
-    Vert v;
-    v.location[0] = x;
-    v.location[1] = y;
-    v.location[2] = z;
-    verts.push_back(v);
-    return &verts.back();
+public:
+  std::unordered_map<uint32_t, Vert> verts;
+  std::unordered_map<uint32_t, Edge> edges;
+  std::unordered_map<uint32_t, Face> faces;
+
+  inline uint32_t vert_create(float x, float y, float z) {
+    auto vert_id = vert_id_counter;
+    verts[vert_id] = {{x, y, z}, {}, {}};
+    vert_id_counter++;
+    return vert_id;
   }
 
-  inline void vert_remove(Vert *v) {
+  inline void vert_remove(uint32_t vert_id) {
+    auto v = verts[vert_id];
+    for (auto edge_id : v.link_edges_ids) {
+      edge_remove_keep_verts(edge_id);
+    }
+    for (auto face_id : v.link_edges_ids) {
+      face_remove_keep_verts_edges(face_id);
+    }
+    verts.erase(vert_id);
+  }
+
+  inline uint32_t edge_create(uint32_t v1_id, uint32_t v2_id) {
+    auto edge_id = edge_id_counter;
+    edges[edge_id] = {v1_id, v2_id, {}};
+    edge_id_counter++;
+    return edge_id;
+  }
+
+  inline void edge_remove_keep_verts(uint32_t edge_id) {}
+
+  inline void edge_remove(uint32_t edge_id) {
+    // Store pointer to verts, as vert_remove destroys linked edges, including this very edge
+    auto e = edges[edge_id];
+    auto v1_id = e.v1_id;
+    auto v2_id = e.v2_id;
+    vert_remove(v1_id);
+    vert_remove(v2_id);
+  }
+
+  inline uint32_t face_create(uint32_t vert_ids[3]) {
+    auto e1_id = edge_create(vert_ids[0], vert_ids[1]);
+    auto e2_id = edge_create(vert_ids[1], vert_ids[2]);
+    auto e3_id = edge_create(vert_ids[2], vert_ids[0]);
+    auto face_id = face_id_counter;
+    faces[face_id] = {
+        {vert_ids[0], vert_ids[0], vert_ids[0]},
+        {e1_id, e2_id, e3_id},
+    };
+    face_id_counter++;
+    return face_id;
+  }
+
+  inline void face_remove_keep_verts_edges(uint32_t face_id) {
     // TODO
   }
 
-  inline Edge *edge_create(Vert *v1, Vert *v2) {
-    Edge e;
-    e.v1 = v1;
-    e.v2 = v2;
-    edges.push_back(e);
-    return &edges.back();
-  }
-
-  inline void edge_remove_keep_verts_faces(Edge *e) {
+  inline void face_remove(uint32_t face_id) {
     // TODO
-  }
-
-  inline void edge_remove(Edge *e) {
-    Vert *v1 = e->v1;
-    Vert *v2 = e->v2;
-    vert_remove(v1);
-    vert_remove(v2);
-  }
-
-  inline Face *face_create(Vert *v1, Vert *v2, Vert *v3) {
-    Face f;
-    f.verts.push_back(v1);
-    f.verts.push_back(v2);
-    f.verts.push_back(v3);
-    auto e1 = edge_create(v1, v2);
-    auto e2 = edge_create(v2, v3);
-    auto e3 = edge_create(v3, v1);
-    f.edges.push_back(e1);
-    f.edges.push_back(e2);
-    f.edges.push_back(e3);
-    faces.push_back(f);
-    return &faces.back();
-  }
-
-  inline void face_remove_keep_verts_edges(Face *f) {
-    // for (auto v : f->verts) {
-    //   v->link_faces.erase(std::find(v->link_faces.begin(), v->link_faces.end(), f));
-    // }
-    // for (auto e : f->edges) {
-    //   e->link_faces.erase(std::find(e->link_faces.begin(), e->link_faces.end(), f));
-    // }
-    // faces.erase(std::find(faces.begin(), faces.end(), *f));
-  }
-
-  inline void face_remove(Face *f) {
   }
 };
