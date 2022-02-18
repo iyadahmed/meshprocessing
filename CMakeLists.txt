@@ -9,10 +9,11 @@ add_executable(test_stl
                stl.cpp
                
                stl.hpp
-               buffer.hpp)
+               mesh.hpp)
 
+add_executable(test_mesh test_mesh.cpp mesh.hpp)
 
-add_executable(test_buffer test_buffer.cpp buffer.hpp)
+add_executable(test_mathutils test_mathutils.c mathutils.c mathutils.h)
 
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
     # link libmath
