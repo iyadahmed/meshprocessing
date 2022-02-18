@@ -5,29 +5,35 @@
 #include <cstdlib>
 #include <cstring>
 
-template <class T> class Buffer {
+template <typename T, uint32_t initial_cap> class Buffer {
 public:
   T *mem_start;
-  uint32_t num_reserved_items;
-  uint32_t num_appended_items;
+  uint32_t cap;
+  uint32_t count;
 
-  Buffer(uint32_t initial_num_items) {
-    this->mem_start = (T *)std::malloc(initial_num_items * sizeof(T));
-    this->num_appended_items = 0;
-    this->num_reserved_items = initial_num_items;
+  Buffer() {
+    this->mem_start = new T[initial_cap]();
+    this->cap = initial_cap;
+    this->count = 0;
   }
 
-  ~Buffer() { std::free(this->mem_start); }
+  ~Buffer() { delete[] this->mem_start; }
 
-  void append(T *data_ptr) {
-    if (this->num_appended_items == this->num_reserved_items) {
-      this->mem_start = (T *)realloc(this->mem_start, this->num_reserved_items * 2 * sizeof(T));
+  T &get_mem() {
+    if (this->count >= this->cap) {
+      auto new_cap = this->count * 2;
+      auto new_mem = new T[new_cap]();
+      // Update memory
+      // TODO: copy old memory to new memory
+      delete[] this->mem_start;
+      this->mem_start = new_mem;
+      // Update cap
+      this->cap = new_cap;
     }
-    memcpy(this->mem_start + this->num_appended_items, data_ptr, sizeof(T));
-    this->num_appended_items++;
+    return this->mem_start[this->count++];
   }
 
-  T &operator[](const int index) { return &(this->mem_start[index]); }
+  T &operator[](const int index) { return this->mem_start[index]; }
 };
 
 #endif
