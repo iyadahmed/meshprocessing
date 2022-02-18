@@ -1,6 +1,7 @@
 #ifndef MESH_HPP
 #define MESH_HPP
 
+#include <algorithm>
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
@@ -9,11 +10,31 @@ struct Vert {
   float location[3];
   std::vector<uint32_t> link_edges_ids;
   std::vector<uint32_t> link_faces_ids;
+
+  inline void remove_link_edge(uint32_t edge_id) {
+    auto it = std::find(link_edges_ids.begin(), link_edges_ids.end(), edge_id);
+    if (it != link_edges_ids.end()) {
+      link_edges_ids.erase(it);
+    }
+  }
+  inline void remove_link_face(uint32_t face_id) {
+    auto it = std::find(link_faces_ids.begin(), link_faces_ids.end(), face_id);
+    if (it != link_faces_ids.end()) {
+      link_faces_ids.erase(it);
+    }
+  }
 };
 
 struct Edge {
   uint32_t v1_id, v2_id;
   std::vector<uint32_t> link_faces_ids;
+
+  inline void remove_link_face(uint32_t face_id) {
+    auto it = std::find(link_faces_ids.begin(), link_faces_ids.end(), face_id);
+    if (it != link_faces_ids.end()) {
+      link_faces_ids.erase(it);
+    }
+  }
 };
 
 struct Face {
@@ -50,10 +71,13 @@ public:
 
   inline void vert_remove(uint32_t vert_id) {
     auto v = verts[vert_id];
-    for (auto edge_id : v.link_edges_ids) {
+    auto link_edges_ids_copy = v.link_edges_ids;
+    for (auto edge_id : link_edges_ids_copy) {
       edge_remove_keep_verts(edge_id);
     }
-    for (auto face_id : v.link_edges_ids) {
+
+    auto link_faces_ids_copy = v.link_faces_ids;
+    for (auto face_id : link_faces_ids_copy) {
       face_remove_keep_verts_edges(face_id);
     }
     verts.erase(vert_id);
@@ -66,7 +90,16 @@ public:
     return edge_id;
   }
 
-  inline void edge_remove_keep_verts(uint32_t edge_id) {}
+  inline void edge_remove_keep_verts(uint32_t edge_id) {
+    auto e = edges[edge_id];
+    verts[e.v1_id].remove_link_edge(edge_id);
+    verts[e.v2_id].remove_link_edge(edge_id);
+
+    for (auto face_id : e.link_faces_ids) {
+      face_remove_keep_verts_edges(face_id);
+    }
+    edges.erase(edge_id);
+  }
 
   inline void edge_remove(uint32_t edge_id) {
     // Store pointer to verts, as vert_remove destroys linked edges, including this very edge
@@ -92,11 +125,14 @@ public:
   }
 
   inline void face_remove_keep_verts_edges(uint32_t face_id) {
-    // TODO
-  }
-
-  inline void face_remove(uint32_t face_id) {
-    // TODO
+    auto f = faces[face_id];
+    for (auto edge_id : f.edges_ids) {
+      edges[edge_id].remove_link_face(face_id);
+    }
+    for (auto vert_id : f.verts_ids) {
+      verts[vert_id].remove_link_face(face_id);
+    }
+    faces.erase(face_id);
   }
 };
 
