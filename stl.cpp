@@ -30,7 +30,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "buffer.hpp"
+#include "mesh.hpp"
 #include "stl.hpp"
 
 const size_t BINARY_HEADER = 80;
@@ -53,31 +53,41 @@ static bool is_ascii_stl(FILE *file) {
   return (file_size != BINARY_HEADER + 4 + BINARY_STRIDE * num_tri);
 }
 
-static Buffer<STLTriangle> *read_stl_binary(FILE *file) {
-  STLTriangle current_triangle = {0};
+struct STLBinaryTri {
+  float normal[3];
+  union {
+    float vertices[3][3];
+    struct {
+      float v1[3], v2[3], v3[3];
+    };
+  };
+};
 
+static void read_stl_binary(Mesh &mesh, FILE *file) {
   fseek(file, BINARY_HEADER, SEEK_SET);
   uint32_t num_tri = 0;
   if (fread(&num_tri, sizeof(uint32_t), 1, file) < 1) {
-    return NULL;
+    return;
   }
 
-  auto triangle_buffer = new Buffer<STLTriangle>(num_tri);
+  STLBinaryTri current_triangle{};
 
   /* TODO: switch num_tri endianess if machine is not little endian */
   for (int i = 0; i < num_tri; i++) {
-    if (fread(&current_triangle, sizeof(STLTriangle), 1, file) == 0) {
-      return triangle_buffer;
+    if (fread(&current_triangle, sizeof(STLBinaryTri), 1, file) == 0) {
+      return;
     }
-    triangle_buffer->append(&current_triangle);
+    auto v1_id = mesh.vert_create(current_triangle.v1);
+    auto v2_id = mesh.vert_create(current_triangle.v2);
+    auto v3_id = mesh.vert_create(current_triangle.v3);
+    uint32_t vert_ids[3] = {v1_id, v2_id, v3_id};
+    mesh.face_create(vert_ids);
 
-    /* TODO: switch floats endianess if machine is not little endian */
     /* Skip "Attribute byte count" */
     if (fseek(file, sizeof(uint16_t), SEEK_CUR) != 0) {
-      return triangle_buffer;
+      return;
     }
   }
-  return triangle_buffer;
 }
 
 static int parse_float3_str(char *buf, float out[3]) {
@@ -113,19 +123,17 @@ static char *lstrip_token_unsafe(char *str) {
   return str_stripped;
 }
 
-static Buffer<STLTriangle> *read_stl_ascii(FILE *file) {
-  STLTriangle current_triangle = {0};
-  auto triangle_buffer = new Buffer<STLTriangle>(10240U);
-
+static void read_stl_ascii(Mesh &mesh, FILE *file) {
   char line_buf[1024] = {0};
   char *line_stripped = NULL;
   char *facet_normal_str = NULL;
   char *vertex_location_str = NULL;
+  STLBinaryTri current_triangle{};
 
   fseek(file, 0, SEEK_SET);
   /* Skip header line */
   if (fgets(line_buf, 1024, file) == NULL) {
-    return NULL;
+    return;
   }
   while (fgets(line_buf, 1024, file) != NULL) {
     line_stripped = lstrip_unsafe(line_buf);
@@ -135,40 +143,40 @@ static Buffer<STLTriangle> *read_stl_ascii(FILE *file) {
       /* Skip "normal" */
       facet_normal_str = lstrip_token_unsafe(facet_normal_str);
       if (parse_float3_str(facet_normal_str, current_triangle.normal) != 0) {
-        return triangle_buffer;
+        return;
       }
     } else if (strncmp(line_stripped, "vertex", 6) == 0) {
       for (int i = 0; i < 3; i++) {
         /* Skip "vertex" */
         vertex_location_str = lstrip_token_unsafe(line_stripped);
         if (parse_float3_str(vertex_location_str, current_triangle.vertices[i]) != 0) {
-          return triangle_buffer;
+          return;
         }
         if (fgets(line_buf, 1024, file) == NULL) {
-          return triangle_buffer;
+          return;
         }
         line_stripped = lstrip_unsafe(line_buf);
       }
-      triangle_buffer->append(&current_triangle);
+      auto v1_id = mesh.vert_create(current_triangle.v1);
+      auto v2_id = mesh.vert_create(current_triangle.v2);
+      auto v3_id = mesh.vert_create(current_triangle.v3);
+      uint32_t vert_ids[3] = {v1_id, v2_id, v3_id};
+      mesh.face_create(vert_ids);
     }
   }
-  return triangle_buffer;
 }
 
-Buffer<STLTriangle> *read_stl(char *filepath) {
+void read_stl(Mesh &mesh, char *filepath) {
   /* TODO: make fopen work for utf8 paths on Windows */
   FILE *file = fopen(filepath, "rb");
   if (file == NULL) {
-    return NULL;
+    return;
   }
-
-  Buffer<STLTriangle> *triangle_buffer = NULL;
   /* TODO: check if STL is valid */
   if (is_ascii_stl(file)) {
-    triangle_buffer = read_stl_ascii(file);
+    read_stl_ascii(mesh, file);
   } else {
-    triangle_buffer = read_stl_binary(file);
+    read_stl_binary(mesh, file);
   }
   fclose(file);
-  return triangle_buffer;
 }
