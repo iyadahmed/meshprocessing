@@ -24,7 +24,9 @@ public:
       auto new_cap = this->count * 2;
       auto new_mem = new T[new_cap]();
       // Update memory
-      // TODO: copy old memory to new memory
+      for (uint32_t i = 0; i < this->cap; i++) {
+        new_mem[i] = this->mem_start[i];
+      }
       delete[] this->mem_start;
       this->mem_start = new_mem;
       // Update cap
