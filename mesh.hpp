@@ -87,6 +87,10 @@ public:
     auto edge_id = edge_id_counter;
     edges[edge_id] = {v1_id, v2_id, {}};
     edge_id_counter++;
+
+    verts[v1_id].link_edges_ids.push_back(edge_id);
+    verts[v2_id].link_edges_ids.push_back(edge_id);
+
     return edge_id;
   }
 
@@ -114,22 +118,38 @@ public:
     auto e1_id = edge_create(vert_ids[0], vert_ids[1]);
     auto e2_id = edge_create(vert_ids[1], vert_ids[2]);
     auto e3_id = edge_create(vert_ids[2], vert_ids[0]);
+
     auto face_id = face_id_counter;
     faces[face_id] = {
         {},
         {vert_ids[0], vert_ids[0], vert_ids[0]},
         {e1_id, e2_id, e3_id},
     };
+
+    edges[e1_id].link_faces_ids.push_back(face_id);
+    edges[e2_id].link_faces_ids.push_back(face_id);
+    edges[e3_id].link_faces_ids.push_back(face_id);
+
+    // TODO: Avoid map lookups by returning reference to Edge from create edge
+    // and same for verts/faces
+    // also store unique id inside vert/edge/data structure
+    verts[vert_ids[0]].link_faces_ids.push_back(face_id);
+    verts[vert_ids[1]].link_faces_ids.push_back(face_id);
+    verts[vert_ids[2]].link_faces_ids.push_back(face_id);
+
     face_id_counter++;
     return face_id;
   }
 
   inline void face_remove_keep_verts_edges(uint32_t face_id) {
     auto f = faces[face_id];
-    for (auto edge_id : f.edges_ids) {
+    auto edge_ids_copy = f.edges_ids;
+    auto vert_ids_copy = f.verts_ids;
+
+    for (auto edge_id : edge_ids_copy) {
       edges[edge_id].remove_link_face(face_id);
     }
-    for (auto vert_id : f.verts_ids) {
+    for (auto vert_id : vert_ids_copy) {
       verts[vert_id].remove_link_face(face_id);
     }
     faces.erase(face_id);

@@ -15,7 +15,7 @@ int main(void) {
     mesh.vert_create(1.0f, 0.0f, 0.0f);
   }
 
-  // mesh.vert_remove(v1);
-  // std::cout << mesh.faces.size() << std::endl;
+  mesh.vert_remove(v1);
+  std::cout << mesh.faces.size() << std::endl;
   return 0;
 }
