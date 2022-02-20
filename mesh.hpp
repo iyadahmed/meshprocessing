@@ -130,9 +130,6 @@ public:
     edges[e2_id].link_faces_ids.push_back(face_id);
     edges[e3_id].link_faces_ids.push_back(face_id);
 
-    // TODO: Avoid map lookups by returning reference to Edge from create edge
-    // and same for verts/faces
-    // also store unique id inside vert/edge/data structure
     verts[vert_ids[0]].link_faces_ids.push_back(face_id);
     verts[vert_ids[1]].link_faces_ids.push_back(face_id);
     verts[vert_ids[2]].link_faces_ids.push_back(face_id);
