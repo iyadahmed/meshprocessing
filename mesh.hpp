@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
-#define POOLMEM_NODES_PER_BLOCK_DEFAULT 1024U
+#define POOLMEM_NODES_PER_BLOCK_DEFAULT 10240U
 
 struct Vert;
 struct Edge;
@@ -18,9 +18,12 @@ template <typename T> struct PoolMemNode {
 };
 template <typename T> struct PoolMem {
 private:
+  std::vector<PoolMemNode<T> *> blocks;
   PoolMemNode<T> *allocation_pointer = nullptr;
+
   inline PoolMemNode<T> *allocate_block() {
     auto block_begin = new PoolMemNode<T>[POOLMEM_NODES_PER_BLOCK_DEFAULT]();
+    blocks.push_back(block_begin);
     auto it = block_begin;
     for (int i = 0; i < POOLMEM_NODES_PER_BLOCK_DEFAULT - 1; i++) {
       it->next = (it + 1);
@@ -31,6 +34,12 @@ private:
   }
 
 public:
+  ~PoolMem() {
+    for (auto mem : blocks) {
+      delete[] mem;
+    }
+  }
+
   inline PoolMemNode<T> *allocate() {
     if (allocation_pointer == nullptr) {
       allocation_pointer = allocate_block();
@@ -206,6 +215,7 @@ public:
     auto face_mem = faces_pool.allocate();
     auto face = &(face_mem->data);
 
+    // TODO: get rid of std::vector
     face->verts = {vert_ids[0], vert_ids[1], vert_ids[2]};
     face->edges = {e1, e2, e3};
 
