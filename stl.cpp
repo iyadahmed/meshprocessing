@@ -77,10 +77,10 @@ static void read_stl_binary(Mesh &mesh, FILE *file) {
     if (fread(&current_triangle, sizeof(STLBinaryTri), 1, file) == 0) {
       return;
     }
-    auto v1_id = mesh.vert_create(current_triangle.v1);
-    auto v2_id = mesh.vert_create(current_triangle.v2);
-    auto v3_id = mesh.vert_create(current_triangle.v3);
-    uint32_t vert_ids[3] = {v1_id, v2_id, v3_id};
+    auto v1 = mesh.vert_create(current_triangle.v1);
+    auto v2 = mesh.vert_create(current_triangle.v2);
+    auto v3 = mesh.vert_create(current_triangle.v3);
+    Vert *vert_ids[3] = {v1, v2, v3};
     mesh.face_create(vert_ids);
 
     /* Skip "Attribute byte count" */
@@ -157,10 +157,10 @@ static void read_stl_ascii(Mesh &mesh, FILE *file) {
         }
         line_stripped = lstrip_unsafe(line_buf);
       }
-      auto v1_id = mesh.vert_create(current_triangle.v1);
-      auto v2_id = mesh.vert_create(current_triangle.v2);
-      auto v3_id = mesh.vert_create(current_triangle.v3);
-      uint32_t vert_ids[3] = {v1_id, v2_id, v3_id};
+      auto v1 = mesh.vert_create(current_triangle.v1);
+      auto v2 = mesh.vert_create(current_triangle.v2);
+      auto v3 = mesh.vert_create(current_triangle.v3);
+      Vert *vert_ids[3] = {v1, v2, v3};
       mesh.face_create(vert_ids);
     }
   }

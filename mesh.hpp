@@ -6,150 +6,250 @@
 #include <unordered_map>
 #include <vector>
 
-struct Vert {
-  float location[3];
-  std::vector<uint32_t> link_edges_ids;
-  std::vector<uint32_t> link_faces_ids;
+#define POOLMEM_NODES_PER_BLOCK_DEFAULT 1024U
 
-  inline void remove_link_edge(uint32_t edge_id) {
-    auto it = std::find(link_edges_ids.begin(), link_edges_ids.end(), edge_id);
-    if (it != link_edges_ids.end()) {
-      link_edges_ids.erase(it);
+struct Vert;
+struct Edge;
+struct Face;
+
+template <typename T> struct PoolMemNode {
+  T data;
+  struct PoolMemNode *next = nullptr;
+};
+template <typename T> struct PoolMem {
+private:
+  PoolMemNode<T> *allocation_pointer = nullptr;
+  inline PoolMemNode<T> *allocate_block() {
+    auto block_begin = new PoolMemNode<T>[POOLMEM_NODES_PER_BLOCK_DEFAULT]();
+    auto it = block_begin;
+    for (int i = 0; i < POOLMEM_NODES_PER_BLOCK_DEFAULT - 1; i++) {
+      it->next = (it + 1);
+      it = it->next;
     }
+    it->next = nullptr;
+    return block_begin;
   }
-  inline void remove_link_face(uint32_t face_id) {
-    auto it = std::find(link_faces_ids.begin(), link_faces_ids.end(), face_id);
-    if (it != link_faces_ids.end()) {
-      link_faces_ids.erase(it);
+
+public:
+  inline PoolMemNode<T> *allocate() {
+    if (allocation_pointer == nullptr) {
+      allocation_pointer = allocate_block();
     }
+
+    auto free_node = allocation_pointer;
+    allocation_pointer = allocation_pointer->next;
+    return free_node;
   }
+
+  inline void deallocate(PoolMemNode<T> *node) {
+    node->next = allocation_pointer;
+    allocation_pointer = node;
+  }
+};
+
+template <typename T> static inline void vector_remove_by_value(std::vector<T> vec, T value) {
+  auto it = std::find(vec.begin(), vec.end(), value);
+  if (it != vec.end()) {
+    vec.erase(it);
+  }
+}
+
+struct Vert {
+  PoolMemNode<Vert> *mem = nullptr;
+
+  float location[3];
+  std::vector<Edge *> link_edges;
+  std::vector<Face *> link_faces;
+
+  struct Vert *next, *prev;
+
+  inline void remove_link_edge(Edge *edge) { vector_remove_by_value<Edge *>(link_edges, edge); }
+
+  inline void remove_link_face(Face *face) { vector_remove_by_value<Face *>(link_faces, face); }
 };
 
 struct Edge {
-  uint32_t v1_id, v2_id;
-  std::vector<uint32_t> link_faces_ids;
+  PoolMemNode<Edge> *mem = nullptr;
 
-  inline void remove_link_face(uint32_t face_id) {
-    auto it = std::find(link_faces_ids.begin(), link_faces_ids.end(), face_id);
-    if (it != link_faces_ids.end()) {
-      link_faces_ids.erase(it);
-    }
-  }
+  Vert *v1, *v2;
+  std::vector<Face *> link_faces;
+
+  struct Edge *next, *prev;
+
+  inline void remove_link_face(Face *face) { vector_remove_by_value<Face *>(link_faces, face); }
 };
 
 struct Face {
+  PoolMemNode<Face> *mem = nullptr;
+
   float custom_normal[3];
-  std::vector<uint32_t> verts_ids;
-  std::vector<uint32_t> edges_ids;
+  std::vector<Vert *> verts;
+  std::vector<Edge *> edges;
+
+  struct Face *next, *prev;
 };
 
-// TODO: reduce memory allocations when creating vertices (inserting into unordered dict)
 struct Mesh {
-private:
-  uint32_t vert_id_counter;
-  uint32_t edge_id_counter;
-  uint32_t face_id_counter;
-
 public:
-  std::unordered_map<uint32_t, Vert> verts;
-  std::unordered_map<uint32_t, Edge> edges;
-  std::unordered_map<uint32_t, Face> faces;
+  // List heads
+  Vert *verts = nullptr;
+  Edge *edges = nullptr;
+  Face *faces = nullptr;
 
-  inline uint32_t vert_create(float location[3]) {
-    auto vert_id = vert_id_counter;
-    verts[vert_id] = {{location[0], location[1], location[2]}, {}, {}};
-    vert_id_counter++;
-    return vert_id;
+  PoolMem<Vert> verts_pool;
+  PoolMem<Edge> edges_pool;
+  PoolMem<Face> faces_pool;
+
+  inline Vert *vert_create(float location[3]) {
+    auto vert = verts_pool.allocate();
+    vert->data.location[0] = location[0];
+    vert->data.location[1] = location[1];
+    vert->data.location[2] = location[2];
+    return &(vert->data);
   }
 
-  inline uint32_t vert_create(float v1, float v2, float v3) {
-    auto vert_id = vert_id_counter;
-    verts[vert_id] = {{v1, v2, v3}, {}, {}};
-    vert_id_counter++;
-    return vert_id;
+  inline Vert *vert_create(float v1, float v2, float v3) {
+    auto vert = verts_pool.allocate();
+    vert->data.location[0] = v1;
+    vert->data.location[1] = v2;
+    vert->data.location[2] = v3;
+
+    // Prepend vertex
+    vert->data.next = verts;
+    vert->data.prev = nullptr;
+    if (verts != nullptr) {
+      verts->prev = &(vert->data);
+    }
+    verts = &(vert->data);
+
+    return &(vert->data);
   }
 
-  inline void vert_remove(uint32_t vert_id) {
-    auto v = verts[vert_id];
-    auto link_edges_ids_copy = v.link_edges_ids;
-    for (auto edge_id : link_edges_ids_copy) {
-      edge_remove_keep_verts(edge_id);
+  inline void vert_remove(Vert *v) {
+    auto link_edges_copy = v->link_edges;
+    for (auto e : link_edges_copy) {
+      edge_remove_keep_verts(e);
     }
 
-    auto link_faces_ids_copy = v.link_faces_ids;
-    for (auto face_id : link_faces_ids_copy) {
-      face_remove_keep_verts_edges(face_id);
+    auto link_faces_copy = v->link_faces;
+    for (auto f : link_faces_copy) {
+      face_remove_keep_verts_edges(f);
     }
-    verts.erase(vert_id);
-  }
 
-  inline uint32_t edge_create(uint32_t v1_id, uint32_t v2_id) {
-    auto edge_id = edge_id_counter;
-    edges[edge_id] = {v1_id, v2_id, {}};
-    edge_id_counter++;
-
-    verts[v1_id].link_edges_ids.push_back(edge_id);
-    verts[v2_id].link_edges_ids.push_back(edge_id);
-
-    return edge_id;
-  }
-
-  inline void edge_remove_keep_verts(uint32_t edge_id) {
-    auto e = edges[edge_id];
-    verts[e.v1_id].remove_link_edge(edge_id);
-    verts[e.v2_id].remove_link_edge(edge_id);
-
-    for (auto face_id : e.link_faces_ids) {
-      face_remove_keep_verts_edges(face_id);
+    // Remove vertex
+    auto prev = v->prev;
+    auto next = v->next;
+    if (prev != nullptr) {
+      prev->next = next;
     }
-    edges.erase(edge_id);
-  }
-
-  inline void edge_remove(uint32_t edge_id) {
-    // Store pointer to verts, as vert_remove destroys linked edges, including this very edge
-    auto e = edges[edge_id];
-    auto v1_id = e.v1_id;
-    auto v2_id = e.v2_id;
-    vert_remove(v1_id);
-    vert_remove(v2_id);
-  }
-
-  inline uint32_t face_create(uint32_t vert_ids[3]) {
-    auto e1_id = edge_create(vert_ids[0], vert_ids[1]);
-    auto e2_id = edge_create(vert_ids[1], vert_ids[2]);
-    auto e3_id = edge_create(vert_ids[2], vert_ids[0]);
-
-    auto face_id = face_id_counter;
-    faces[face_id] = {
-        {},
-        {vert_ids[0], vert_ids[0], vert_ids[0]},
-        {e1_id, e2_id, e3_id},
-    };
-
-    edges[e1_id].link_faces_ids.push_back(face_id);
-    edges[e2_id].link_faces_ids.push_back(face_id);
-    edges[e3_id].link_faces_ids.push_back(face_id);
-
-    verts[vert_ids[0]].link_faces_ids.push_back(face_id);
-    verts[vert_ids[1]].link_faces_ids.push_back(face_id);
-    verts[vert_ids[2]].link_faces_ids.push_back(face_id);
-
-    face_id_counter++;
-    return face_id;
-  }
-
-  inline void face_remove_keep_verts_edges(uint32_t face_id) {
-    auto f = faces[face_id];
-    auto edge_ids_copy = f.edges_ids;
-    auto vert_ids_copy = f.verts_ids;
-
-    for (auto edge_id : edge_ids_copy) {
-      edges[edge_id].remove_link_face(face_id);
+    if (next != nullptr) {
+      next->prev = prev;
     }
-    for (auto vert_id : vert_ids_copy) {
-      verts[vert_id].remove_link_face(face_id);
+    verts_pool.deallocate(v->mem);
+  }
+
+  inline Edge *edge_create(Vert *v1, Vert *v2) {
+    auto edge_mem = edges_pool.allocate();
+    auto edge = &(edge_mem->data);
+
+    edge->v1 = v1;
+    edge->v2 = v2;
+
+    v1->link_edges.push_back(edge);
+    v2->link_edges.push_back(edge);
+
+    // Prepend edge
+    edge->next = edges;
+    edge->prev = nullptr;
+    if (edges != nullptr) {
+      edges->prev = edge;
     }
-    faces.erase(face_id);
+    edges = edge;
+
+    return edge;
+  }
+
+  inline void edge_remove_keep_verts(Edge *e) {
+    e->v1->remove_link_edge(e);
+    e->v2->remove_link_edge(e);
+
+    for (auto face : e->link_faces) {
+      face_remove_keep_verts_edges(face);
+    }
+
+    // Remove edge
+    auto prev = e->prev;
+    auto next = e->next;
+    if (prev != nullptr) {
+      prev->next = next;
+    }
+    if (next != nullptr) {
+      next->prev = prev;
+    }
+
+    edges_pool.deallocate(e->mem);
+  }
+
+  inline void edge_remove(Edge *e) {
+    // Store pointers to verts, as vert_remove destroys linked edges, including this very edge
+    auto v1 = e->v1;
+    auto v2 = e->v2;
+    vert_remove(v1);
+    vert_remove(v2);
+  }
+
+  inline Face *face_create(Vert *vert_ids[3]) {
+    auto e1 = edge_create(vert_ids[0], vert_ids[1]);
+    auto e2 = edge_create(vert_ids[1], vert_ids[2]);
+    auto e3 = edge_create(vert_ids[2], vert_ids[0]);
+
+    auto face_mem = faces_pool.allocate();
+    auto face = &(face_mem->data);
+
+    face->verts = {vert_ids[0], vert_ids[1], vert_ids[2]};
+    face->edges = {e1, e2, e3};
+
+    e1->link_faces.push_back(face);
+    e2->link_faces.push_back(face);
+    e3->link_faces.push_back(face);
+
+    vert_ids[0]->link_faces.push_back(face);
+    vert_ids[1]->link_faces.push_back(face);
+    vert_ids[2]->link_faces.push_back(face);
+
+    // Prepend face
+    face->next = faces;
+    face->prev = nullptr;
+    if (faces != nullptr) {
+      faces->prev = face;
+    }
+    faces = face;
+
+    return face;
+  }
+
+  inline void face_remove_keep_verts_edges(Face *f) {
+    auto edges_copy = f->edges;
+    auto verts_copy = f->verts;
+
+    for (auto e : edges_copy) {
+      e->remove_link_face(f);
+    }
+    for (auto v : verts_copy) {
+      v->remove_link_face(f);
+    }
+
+    // Remove edge
+    auto prev = f->prev;
+    auto next = f->next;
+    if (prev != nullptr) {
+      prev->next = next;
+    }
+    if (next != nullptr) {
+      next->prev = prev;
+    }
+
+    faces_pool.deallocate(f->mem);
   }
 };
 
