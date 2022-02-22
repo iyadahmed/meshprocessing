@@ -3,7 +3,7 @@
 
 #include "mathutils.h"
 
-float *covariance3(float arr[][3], uint32_t num_elems) {
+void covariance3(float out[3][3], float arr[][3], uint32_t num_elems) {
   float mean[3] = {0.0f};
   float cov = 0.0f;
   for (uint32_t i = 0; i < num_elems; i++) {
@@ -11,7 +11,7 @@ float *covariance3(float arr[][3], uint32_t num_elems) {
     mean[1] += arr[i][1] / num_elems;
     mean[2] += arr[i][2] / num_elems;
   }
-  for (uint32_t i = 0; i < num_elems; i++){
-    
+  for (uint32_t i = 0; i < num_elems; i++) {
+    cov += (arr[i][0] - mean[0]) * (arr[i][1] - mean[1]) * (arr[i][2] - mean[2]) / num_elems;
   }
 }
