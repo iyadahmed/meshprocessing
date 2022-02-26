@@ -53,16 +53,6 @@ static bool is_ascii_stl(FILE *file) {
   return (file_size != BINARY_HEADER + 4 + BINARY_STRIDE * num_tri);
 }
 
-struct STLBinaryTri {
-  float normal[3];
-  union {
-    float vertices[3][3];
-    struct {
-      float v1[3], v2[3], v3[3];
-    };
-  };
-};
-
 static void read_stl_binary(Mesh &mesh, FILE *file) {
   fseek(file, BINARY_HEADER, SEEK_SET);
   uint32_t num_tri = 0;
@@ -70,18 +60,14 @@ static void read_stl_binary(Mesh &mesh, FILE *file) {
     return;
   }
 
-  STLBinaryTri current_triangle{};
+  Triangle current_triangle{};
 
   /* TODO: switch num_tri endianess if machine is not little endian */
   for (int i = 0; i < num_tri; i++) {
-    if (fread(&current_triangle, sizeof(STLBinaryTri), 1, file) == 0) {
+    if (fread(&current_triangle, sizeof(Triangle), 1, file) == 0) {
       return;
     }
-    auto v1 = mesh.vert_create(current_triangle.v1);
-    auto v2 = mesh.vert_create(current_triangle.v2);
-    auto v3 = mesh.vert_create(current_triangle.v3);
-    Vert *vert_ids[3] = {v1, v2, v3};
-    mesh.face_create(vert_ids);
+    mesh.triangles.push_back(current_triangle);
 
     /* Skip "Attribute byte count" */
     if (fseek(file, sizeof(uint16_t), SEEK_CUR) != 0) {
@@ -128,7 +114,7 @@ static void read_stl_ascii(Mesh &mesh, FILE *file) {
   char *line_stripped = NULL;
   char *facet_normal_str = NULL;
   char *vertex_location_str = NULL;
-  STLBinaryTri current_triangle{};
+  Triangle current_triangle{};
 
   fseek(file, 0, SEEK_SET);
   /* Skip header line */
@@ -142,7 +128,7 @@ static void read_stl_ascii(Mesh &mesh, FILE *file) {
       facet_normal_str = lstrip_token_unsafe(line_stripped);
       /* Skip "normal" */
       facet_normal_str = lstrip_token_unsafe(facet_normal_str);
-      if (parse_float3_str(facet_normal_str, current_triangle.normal) != 0) {
+      if (parse_float3_str(facet_normal_str, current_triangle.custom_normal) != 0) {
         return;
       }
     } else if (strncmp(line_stripped, "vertex", 6) == 0) {
@@ -157,11 +143,7 @@ static void read_stl_ascii(Mesh &mesh, FILE *file) {
         }
         line_stripped = lstrip_unsafe(line_buf);
       }
-      auto v1 = mesh.vert_create(current_triangle.v1);
-      auto v2 = mesh.vert_create(current_triangle.v2);
-      auto v3 = mesh.vert_create(current_triangle.v3);
-      Vert *vert_ids[3] = {v1, v2, v3};
-      mesh.face_create(vert_ids);
+      mesh.triangles.push_back(current_triangle);
     }
   }
 }

@@ -4,12 +4,12 @@ project(meshprocessing)
 set(TARGET meshprocessing PROPERTY C_STANDARD 11)
 set(TARGET meshprocessing PROPERTY CXX_STANDARD 11)
 
-# add_executable(test_stl
-#                test_stl.cpp
-#                stl.cpp
+add_executable(test_stl
+               test_stl.cpp
+               stl.cpp
                
-#                stl.hpp
-#                mesh.hpp)
+               stl.hpp
+               mesh.hpp)
 add_executable(test_mesh test_mesh.cpp mesh.hpp)
 add_executable(test_mathutils test_mathutils.cpp mathutils.hpp)
 add_executable(test_buffer test_buffer.cpp buffer.hpp)
