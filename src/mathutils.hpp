@@ -41,6 +41,17 @@ inline void cross_v3v3(float out[3], float a[3], float b[3]) {
   out[2] = a[0] * b[1] - a[1] * b[0];
 }
 
+struct Vector {
+  union {
+    float co[3];
+    struct {
+      float x, y, z;
+    };
+  };
+
+  inline float &operator[](uint32_t i) { return co[i]; }
+};
+
 // TODO: improve precision
 inline void mean_v3(float out[3], const float vectors[][3], uint32_t num_vectors) {
   out[0] = 0.0f;
@@ -53,46 +64,43 @@ inline void mean_v3(float out[3], const float vectors[][3], uint32_t num_vectors
   }
 }
 
-enum class LinePlaneIntersectionType {
+enum class LineIntersectionType {
   SINGLE_POINT,
   CONTAINED,
   NONE,
 };
 
-struct LinePlaneIntersectionResult {
-  LinePlaneIntersectionType type;
-  float single_intersection_point[3];
+struct LineIntersectionResult {
+  LineIntersectionType type;
+  Vector single_intersection_point;
 };
 
 struct Plane {
-  float co[3];
-  float normal[3];
+  Vector co;
+  Vector direction;
 };
 
-struct Line {
-  float co[3];
-  float direction[3];
-};
+typedef Plane Line;
 
 // https://en.wikipedia.org/w/index.php?title=Line%E2%80%93plane_intersection&oldid=1030561834
-inline void line_plane_intersection(LinePlaneIntersectionResult *out, Plane *plane, Line *line) {
+inline void line_plane_intersection(LineIntersectionResult *out, Plane *plane, Line *line) {
 
-  float d_numerator = ((plane->co[0] - line->co[0]) * plane->normal[0]) +
-                      ((plane->co[1] - line->co[1]) * plane->normal[1]) +
-                      ((plane->co[2] - line->co[2]) * plane->normal[2]);
+  float d_numerator = ((plane->co[0] - line->co[0]) * plane->direction[0]) +
+                      ((plane->co[1] - line->co[1]) * plane->direction[1]) +
+                      ((plane->co[2] - line->co[2]) * plane->direction[2]);
 
-  float l_dot_n = (line->direction[0] * plane->normal[0] + line->direction[1] * plane->normal[1] +
-                   line->direction[2] * plane->normal[2]);
+  float l_dot_n = (line->direction[0] * plane->direction[0] + line->direction[1] * plane->direction[1] +
+                   line->direction[2] * plane->direction[2]);
 
   if (fabs(l_dot_n) <= 1e-5f) {
     if (fabs(d_numerator) <= 1e-5f) {
-      out->type = LinePlaneIntersectionType::CONTAINED;
+      out->type = LineIntersectionType::CONTAINED;
     } else {
-      out->type = LinePlaneIntersectionType::NONE;
+      out->type = LineIntersectionType::NONE;
     }
   } else {
     const float d = (d_numerator / l_dot_n);
-    out->type = LinePlaneIntersectionType::SINGLE_POINT;
+    out->type = LineIntersectionType::SINGLE_POINT;
     out->single_intersection_point[0] = line->co[0] + line->direction[0] * d;
     out->single_intersection_point[1] = line->co[1] + line->direction[1] * d;
     out->single_intersection_point[2] = line->co[2] + line->direction[2] * d;

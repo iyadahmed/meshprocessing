@@ -7,7 +7,7 @@
 #include "mathutils.hpp"
 
 void test_line_plane_intersection() {
-  LinePlaneIntersectionResult res{LinePlaneIntersectionType::NONE, {0.0f}};
+  LineIntersectionResult res{LineIntersectionType::NONE, {0.0f}};
   Plane plane{{1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}};
   Line line{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}};
 
@@ -15,7 +15,7 @@ void test_line_plane_intersection() {
     line_plane_intersection(&res, &plane, &line);
   }
 
-  assert(res.type == LinePlaneIntersectionType::SINGLE_POINT);
+  assert(res.type == LineIntersectionType::SINGLE_POINT);
   assert(res.single_intersection_point[0] == 1.0f);
   assert(res.single_intersection_point[1] == 1.0f);
   assert(res.single_intersection_point[2] == 1.0f);
