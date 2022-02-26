@@ -13,8 +13,8 @@ int main(int argc, char **argv) {
 
   read_stl(mesh, argv[1]);
 
-  float bb_min[3] = {INFINITY};
-  float bb_max[3] = {-INFINITY};
+  float bb_min[3] = {INFINITY, INFINITY, INFINITY};
+  float bb_max[3] = {-INFINITY, -INFINITY, -INFINITY};
 
   for (auto t : mesh.triangles) {
     for (int j = 0; j < 3; j++) {
