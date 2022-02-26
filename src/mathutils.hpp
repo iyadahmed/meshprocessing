@@ -3,6 +3,44 @@
 
 #include <stdint.h>
 
+inline void sub_v3v3(float out[3], const float a[3], const float b[3]) {
+  out[0] = a[0] - b[0];
+  out[1] = a[1] - b[1];
+  out[2] = a[2] - b[2];
+}
+
+inline void add_v3v3(float out[3], const float a[3], const float b[3]) {
+  out[0] = a[0] + b[0];
+  out[1] = a[1] + b[1];
+  out[2] = a[2] + b[2];
+}
+
+inline void mul_v3v3(float out[3], const float a[3], const float b[3]) {
+  out[0] = a[0] * b[0];
+  out[1] = a[1] * b[1];
+  out[2] = a[2] * b[2];
+}
+
+inline void div_v3v3(float out[3], const float a[3], const float b[3]) {
+  out[0] = a[0] / b[0];
+  out[1] = a[1] / b[1];
+  out[2] = a[2] / b[2];
+}
+
+inline void scale_v3(float out[3], float v[3], float scale) {
+  out[0] = v[0] * scale;
+  out[1] * v[1] * scale;
+  out[2] * v[2] * scale;
+}
+
+inline float dot_v3v3(const float a[3], const float b[3]) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+
+inline void cross_v3v3(float out[3], float a[3], float b[3]) {
+  out[0] = a[1] * b[2] - a[2] * b[1];
+  out[1] = a[2] * b[0] - a[0] * b[2];
+  out[2] = a[0] * b[1] - a[1] * b[0];
+}
+
 enum class LinePlaneIntersectionType {
   SINGLE_POINT,
   CONTAINED,
