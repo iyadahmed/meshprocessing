@@ -28,6 +28,8 @@ void test_cross_product() {
   float a[3] = {1.0f, 0.0f, 0.0f};
   float b[3] = {0.0f, 1.0f, 0.0};
   cross_v3v3(out, a, b);
+  assert(fabs(out[0]) <= 1e-5f);
+  assert(fabs(out[1]) <= 1e-5f);
   assert(fabs(out[2] - 1.0f) <= 1e-5f);
 }
 
