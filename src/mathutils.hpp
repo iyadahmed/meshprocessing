@@ -41,16 +41,23 @@ inline void cross_v3v3(float out[3], float a[3], float b[3]) {
   out[2] = a[0] * b[1] - a[1] * b[0];
 }
 
-struct Vector {
-  union {
-    float co[3];
-    struct {
-      float x, y, z;
-    };
-  };
+inline void copy_v3v3(float out[3], const float v[3]) {
+  out[0] = v[0];
+  out[1] = v[1];
+  out[2] = v[2];
+}
 
-  inline float &operator[](uint32_t i) { return co[i]; }
-};
+inline float length_v3(const float v[3]) { return sqrtf(dot_v3v3(v, v)); }
+
+inline void normalize_v3v3(float out[3], const float v[3]) {
+  copy_v3v3(out, v);
+  float l = length_v3(v);
+  if (fabsf(l) > 1e-5f) {
+    scale_v3(out, out, 1.0f / l);
+  }
+}
+
+typedef float Vector3[3];
 
 // TODO: improve precision
 inline void mean_v3(float out[3], const float vectors[][3], uint32_t num_vectors) {
@@ -72,12 +79,12 @@ enum class LineIntersectionType {
 
 struct LineIntersectionResult {
   LineIntersectionType type;
-  Vector single_intersection_point;
+  Vector3 single_intersection_point;
 };
 
 struct Plane {
-  Vector co;
-  Vector direction;
+  Vector3 co;
+  Vector3 direction;
 };
 
 typedef Plane Line;
