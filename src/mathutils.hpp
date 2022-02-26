@@ -30,7 +30,7 @@ inline void div_v3v3(float out[3], const float a[3], const float b[3]) {
   out[2] = a[2] / b[2];
 }
 
-inline void scale_v3(float out[3], float v[3], float scale) {
+inline void scale_v3(float out[3], const float v[3], const float scale) {
   out[0] = v[0] * scale;
   out[1] * v[1] * scale;
   out[2] * v[2] * scale;
