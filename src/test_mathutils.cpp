@@ -7,14 +7,12 @@
 #include "mathutils.hpp"
 
 void test_line_plane_intersection() {
-  float pco[3] = {1.0f, 1.0f, 1.0f};
-  float pno[3] = {1.0f, 1.0f, 1.0f};
-  float lco[3] = {0.0f, 0.0f, 0.0f};
-  float ldir[3] = {1.0f, 1.0f, 1.0f};
   LinePlaneIntersectionResult res{LinePlaneIntersectionType::NONE, {0.0f}};
+  Plane plane{{1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}};
+  Line line{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}};
 
   for (uint32_t i = 0; i < 1000'000'0; i++) {
-    line_plane_intersection(&res, pco, pno, lco, ldir);
+    line_plane_intersection(&res, &plane, &line);
   }
 
   assert(res.type == LinePlaneIntersectionType::SINGLE_POINT);
