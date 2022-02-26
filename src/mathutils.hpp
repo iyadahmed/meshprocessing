@@ -41,6 +41,18 @@ inline void cross_v3v3(float out[3], float a[3], float b[3]) {
   out[2] = a[0] * b[1] - a[1] * b[0];
 }
 
+// TODO: improve precision
+inline void mean_v3(float out[3], const float vectors[][3], uint32_t num_vectors) {
+  out[0] = 0.0f;
+  out[1] = 0.0f;
+  out[2] = 0.0f;
+  for (uint32_t i = 0; i < num_vectors; i++) {
+    out[0] += (vectors[i][0] / num_vectors);
+    out[1] += (vectors[i][1] / num_vectors);
+    out[2] += (vectors[i][2] / num_vectors);
+  }
+}
+
 enum class LinePlaneIntersectionType {
   SINGLE_POINT,
   CONTAINED,
