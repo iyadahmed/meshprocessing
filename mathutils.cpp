@@ -19,16 +19,7 @@
 //   }
 // }
 
-enum class LinePlaneIntersectionType {
-  SINGLE_POINT,
-  CONTAINED,
-  NONE,
-};
 
-typedef struct LinePlaneIntersectionResult {
-  LinePlaneIntersectionType type;
-  float single_intersection_point[3];
-} LinePlaneIntersectionResult;
 
 // https://en.wikipedia.org/w/index.php?title=Line%E2%80%93plane_intersection&oldid=1030561834
 void line_plane_intersection(LinePlaneIntersectionResult *out, const float plane_co[3], const float plane_normal[3],
