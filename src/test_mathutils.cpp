@@ -11,7 +11,7 @@ void test_line_plane_intersection() {
   Plane plane{{1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}};
   Line line{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}};
 
-  for (uint32_t i = 0; i < 1000'000'0; i++) {
+  for (uint32_t i = 0; i < 10'000'000; i++) {
     line_plane_intersection(&res, &plane, &line);
   }
 
