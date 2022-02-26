@@ -11,7 +11,7 @@ set(TARGET meshprocessing PROPERTY CXX_STANDARD 11)
 #                stl.hpp
 #                mesh.hpp)
 # add_executable(test_mesh test_mesh.cpp mesh.hpp list.hpp poolmem.hpp)
-add_executable(test_mathutils test_mathutils.cpp mathutils.cpp mathutils.hpp)
+add_executable(test_mathutils test_mathutils.cpp mathutils.hpp)
 # add_executable(test_buffer test_buffer.cpp buffer.hpp)
 
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
