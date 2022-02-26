@@ -3,13 +3,15 @@
 #include "buffer.hpp"
 
 int main(void) {
-  auto buf = new Buffer<int, 100U>();
+  Buffer<int> buf(1000U);
 
-  for (int i = 0; i < 1000; i++) {
-    buf->get_mem() = i;
+  for (int i = 0; i < 1000'000'0; i++) {
+    auto mem = buf.allocate();
+    if (mem){
+      *mem = i;
+    }
   }
 
-  std::cout << buf->mem_start[10] << std::endl;
-  delete buf;
+  std::cout << buf.mem_start[100] << std::endl;
   return 0;
 }

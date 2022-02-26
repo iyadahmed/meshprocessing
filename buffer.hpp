@@ -3,39 +3,31 @@
 
 #include <cstdint>
 #include <cstdlib>
-#include <cstring>
 
-template <typename T, uint32_t initial_cap> class Buffer {
+template <typename T> class Buffer {
 public:
   T *mem_start;
   uint32_t cap;
   uint32_t count;
 
-  Buffer() {
-    this->mem_start = new T[initial_cap]();
+  Buffer(uint32_t initial_cap) {
+    this->mem_start = (T *)malloc(sizeof(T) * initial_cap);
     this->cap = initial_cap;
-    this->count = 0;
+    this->count = 0U;
   }
 
-  ~Buffer() { delete[] this->mem_start; }
+  ~Buffer() { free(this->mem_start); }
 
-  T &get_mem() {
+  T *allocate() {
     if (this->count >= this->cap) {
-      auto new_cap = this->count * 2;
-      auto new_mem = new T[new_cap]();
-      // Update memory
-      for (uint32_t i = 0; i < this->cap; i++) {
-        new_mem[i] = this->mem_start[i];
-      }
-      delete[] this->mem_start;
-      this->mem_start = new_mem;
-      // Update cap
-      this->cap = new_cap;
+      this->cap = this->count * 2;
+      this->mem_start = (T *)realloc(this->mem_start, sizeof(T) * this->cap);
     }
-    return this->mem_start[this->count++];
+    if (this->mem_start == NULL){
+      return NULL;
+    }
+    return this->mem_start + (this->count++);
   }
-
-  T &operator[](const int index) { return this->mem_start[index]; }
 };
 
 #endif
