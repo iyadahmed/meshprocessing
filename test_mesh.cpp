@@ -11,9 +11,9 @@ int main(void) {
   float v3[3] = {0.0f, 0.0f, 1.0f};
   auto tri = Triangle{};
 
-  for (int i = 0; i < 1000'000; i++) {
+  for (int i = 0; i < 1000'000'0; i++) {
     mesh.triangles.push_back(tri);
   }
 
   return 0;
-  }
+}
