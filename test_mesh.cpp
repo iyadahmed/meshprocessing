@@ -1,21 +1,19 @@
 #include <iostream>
 
 #include "mesh.hpp"
-#include "list.hpp"
 
 int main(void) {
 
   Mesh mesh{};
-  ListNode<Vert *> *verts[3] = {};
+
+  float v1[3] = {1.0f, 0.0f, 0.0f};
+  float v2[3] = {0.0f, 1.0f, 0.0f};
+  float v3[3] = {0.0f, 0.0f, 1.0f};
+  auto tri = Triangle{};
+
   for (int i = 0; i < 1000'000; i++) {
-    auto v1 = mesh.vert_create(1.0f, 0.0f, 0.0f);
-    auto v2 = mesh.vert_create(0.0f, 1.0f, 0.0f);
-    auto v3 = mesh.vert_create(0.0f, 0.0f, 1.0f);
-    verts[0] = v1;
-    verts[1] = v2;
-    verts[2] = v3;
-    auto f = mesh.face_create(verts);
+    mesh.triangles.push_back(tri);
   }
 
   return 0;
-}
+  }
