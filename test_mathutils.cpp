@@ -1,3 +1,3 @@
-#include "mathutils.h"
+#include "mathutils.hpp"
 
 int main(void) { return 0; }
