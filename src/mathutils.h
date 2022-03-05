@@ -1,8 +1,7 @@
-#ifndef MATHUTILS_HPP
-#define MATHUTILS_HPP
+#ifndef MATHUTILS_H
+#define MATHUTILS_H
 
 #include <assert.h>
-#include <iostream>
 #include <math.h>
 #include <stdint.h>
 
@@ -115,8 +114,8 @@ inline void line_plane_intersection(LineIntersectionResult *out, const Plane *pl
   float l_dot_n = (line->direction[0] * plane->direction[0] + line->direction[1] * plane->direction[1] +
                    line->direction[2] * plane->direction[2]);
 
-  if (fabs(l_dot_n) <= 1e-5f) {
-    if (fabs(d_numerator) <= 1e-5f) {
+  if (fabsf(l_dot_n) <= 1e-5f) {
+    if (fabsf(d_numerator) <= 1e-5f) {
       out->type = LineIntersectionType::CONTAINED;
     } else {
       out->type = LineIntersectionType::NONE;

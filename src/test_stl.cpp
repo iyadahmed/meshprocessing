@@ -1,7 +1,6 @@
 #include <cmath>
 #include <cstdio>
 
-#include "mathutils.hpp"
 #include "stl.hpp"
 
 int main(int argc, char **argv) {

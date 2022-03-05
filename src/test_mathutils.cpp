@@ -4,7 +4,7 @@
 #include <iostream>
 #include <random>
 
-#include "mathutils.hpp"
+#include "mathutils.h"
 
 // Use real data instead of pointless iteration, as compiler might optimize away the iteration
 
