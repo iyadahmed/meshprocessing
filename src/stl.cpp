@@ -76,9 +76,9 @@ static void read_stl_binary(Mesh &mesh, FILE *file) {
   }
 }
 
-static int parse_float3_str(char *buf, float out[3]) {
+static int parse_float3_str(const char *str, float out[3]) {
   errno = 0;
-  char *startptr = buf;
+  char *startptr = (char *)str;
   char *endptr = NULL;
   for (int i = 0; i < 3; i++) {
     out[i] = strtof(startptr, &endptr);
@@ -90,16 +90,16 @@ static int parse_float3_str(char *buf, float out[3]) {
   return 0;
 }
 
-static char *lstrip_unsafe(char *str) {
-  char *str_stripped = str;
+static char *lstrip_unsafe(const char *str) {
+  char *str_stripped = (char *)str;
   while ((*str_stripped != '\0') && isspace(*str_stripped)) {
     str_stripped++;
   }
   return str_stripped;
 }
 
-static char *lstrip_token_unsafe(char *str) {
-  char *str_stripped = str;
+static char *lstrip_token_unsafe(const char *str) {
+  char *str_stripped = (char *)str;
   while ((*str_stripped != '\0') && isspace(*str_stripped)) {
     str_stripped++;
   }
