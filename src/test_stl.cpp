@@ -1,5 +1,7 @@
+#include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <iostream>
 
 #include "stl.hpp"
 
@@ -11,7 +13,11 @@ int main(int argc, char **argv) {
 
   Mesh mesh{};
 
+  auto t0 = std::chrono::high_resolution_clock::now();
   read_stl(mesh, argv[1]);
+  auto t1 = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> time = t1 - t0;
+  std::cout << "Import finished in " << time.count() << " seconds" << std::endl;
 
   float bb_min[3] = {INFINITY, INFINITY, INFINITY};
   float bb_max[3] = {-INFINITY, -INFINITY, -INFINITY};
