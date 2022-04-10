@@ -109,6 +109,23 @@ static char *lstrip_token_unsafe(const char *str) {
   return str_stripped;
 }
 
+// Returns 0 on success, 1 on error
+static int read_token(FILE *file, char *buffer, size_t buffer_len) {
+  int c;
+  size_t i = 0;
+  // Skip leading whitespaces
+  while (((c = fgetc(file)) != EOF) && (i < buffer_len) && isspace(c)) {
+  }
+  if (feof(file) || ferror(file) || (i >= buffer_len)) {
+    return 1;
+  }
+  // Read until whitespace
+  while (((c = fgetc(file)) != EOF) && (i < buffer_len) && !isspace(c)) {
+    buffer[i++] = (char)c;
+  }
+  return 0;
+}
+
 static void read_stl_ascii(Mesh &mesh, FILE *file) {
   char line_buf[1024] = {0};
   char *line_stripped = NULL;
