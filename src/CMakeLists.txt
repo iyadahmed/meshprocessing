@@ -3,7 +3,7 @@ add_executable(test_stl
                stl.cpp
                
                stl.hpp
-               mesh.hpp)
+               vec3.hh)
 add_executable(test_mesh test_mesh.cpp mesh.hpp)
 add_executable(test_mathutils test_mathutils.cpp mathutils.h)
 
