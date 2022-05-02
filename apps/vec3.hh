@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <stdexcept>
+#include <iostream>
 
 class Vec3
 {
@@ -11,18 +12,19 @@ public:
     Vec3(double x = 0.0, double y = 0.0, double z = 0.0) : x(x), y(y), z(z) {}
 
     // https://stackoverflow.com/a/66663070/8094047
-    friend auto operator<<(std::ostream& os, Vec3 const& m) -> std::ostream& { 
+    friend auto operator<<(std::ostream &os, Vec3 const &m) -> std::ostream &
+    {
         return os << "<Vector (" << m.x << ", " << m.y << ", " << m.z << ")>";
     }
 
-    static void min(Vec3& out, const Vec3& a, const Vec3& b)
+    static void min(Vec3 &out, const Vec3 &a, const Vec3 &b)
     {
         out.x = fmin(a.x, b.x);
         out.y = fmin(a.y, b.y);
         out.z = fmin(a.z, b.z);
     }
 
-    static void max(Vec3& out, const Vec3& a, const Vec3& b)
+    static void max(Vec3 &out, const Vec3 &a, const Vec3 &b)
     {
         out.x = fmax(a.x, b.x);
         out.y = fmax(a.y, b.y);

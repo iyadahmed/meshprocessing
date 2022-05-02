@@ -5,8 +5,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <vector>
-#include <iostream>
 #include <stdio.h>
 
 #include "stl.hpp"
@@ -14,7 +12,7 @@
 const size_t BINARY_HEADER = 80;
 const size_t BINARY_STRIDE = 12 * 4 + 2;
 
-static long calc_file_size(FILE *file)
+static inline long calc_file_size(FILE *file)
 {
   fseek(file, 0, SEEK_END);
   long file_size = ftell(file);
@@ -172,38 +170,53 @@ static int read_token(FILE *file, char *buffer, size_t buffer_len)
  *    ...
  *  endsolid name
  */
-static void read_stl_ascii(Mesh &mesh, FILE *file)
+
+static inline void read_stl_ascii_vertex(Mesh &mesh, FILE *file)
 {
   char token_buf[1024];
   float float3_buf[3];
-  size_t num_verts = 0;
+  for (int i = 0; i < 3; i++)
+  {
+    read_token(file, token_buf, 1024);
+    if (parse_float_str(token_buf, float3_buf + i))
+    {
+      fputs("STL Importer: ERROR! failed to parse float.", stderr);
+      return;
+    }
+  }
+  mesh.add_vertex(float3_buf[0], float3_buf[1], float3_buf[2]);
+}
+
+static inline void read_stl_ascii_facet(Mesh &mesh, FILE *file)
+{
+  char token_buf[1024];
+  float float3_buf[3];
+  read_token(file, token_buf, 1024); // Skip "normal"
+  for (int i = 0; i < 3; i++)
+  {
+    read_token(file, token_buf, 1024);
+    parse_float_str(token_buf, float3_buf + i);
+  }
+  // TODO: do something with the normal vector
+}
+
+static void read_stl_ascii(Mesh &mesh, FILE *file)
+{
+  char token_buf[1024];
 
   fseek(file, 0, SEEK_SET);
   fgets(token_buf, 1024, file); // Skip header line
 
   while (read_token(file, token_buf, 1024))
   {
-    if (memcmp(token_buf, "facet", 5) == 0)
+    // if (memcmp(token_buf, "facet", 5) == 0)
+    // {
+    //   read_stl_ascii_facet(mesh, file);
+    // }
+    // else
+    if (memcmp(token_buf, "vertex", 6) == 0)
     {
-      read_token(file, token_buf, 1024); // Skip "normal"
-      for (int i = 0; i < 3; i++)
-      {
-        read_token(file, token_buf, 1024);
-        // parse_float_str(token_buf, float3_buf + i);
-      }
-    }
-    else if (memcmp(token_buf, "vertex", 6) == 0)
-    {
-      for (int i = 0; i < 3; i++)
-      {
-        read_token(file, token_buf, 1024);
-        if (parse_float_str(token_buf, float3_buf + i))
-        {
-          fputs("STL Importer: ERROR! failed to parse float.", stderr);
-          return;
-        }
-      }
-      mesh.add_vertex(float3_buf[0], float3_buf[1], float3_buf[2]);
+      read_stl_ascii_vertex(mesh, file);
     }
   }
 }
@@ -215,19 +228,22 @@ void read_stl(Mesh &mesh, const char *filepath)
 
   if (file == NULL)
   {
-    std::cerr << "Error opening file " << filepath << std::endl;
+    fputs("Error opening file: ", stderr);
+    fputs(filepath, stderr);
     return;
   }
 
   /* TODO: check if STL is valid */
   if (is_ascii_stl(file))
   {
-    std::cout << "Reading ASCII STL " << filepath << std::endl;
+    puts("Reading ASCII STL: ");
+    puts(filepath);
     read_stl_ascii(mesh, file);
   }
   else
   {
-    std::cout << "Reading Binary STL " << filepath << std::endl;
+    puts("Reading Binary STL");
+    puts(filepath);
     read_stl_binary(mesh, file);
   }
   fclose(file);
