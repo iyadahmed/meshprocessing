@@ -65,6 +65,7 @@ static void read_stl_binary(Mesh &mesh, FILE *file)
   fseek(file, BINARY_HEADER, SEEK_SET);
   if (fread(&num_tri, sizeof(uint32_t), 1, file) < 1)
   {
+    fputs("STL Importer: Failed to read binary STL triangle count", stderr);
     return;
   }
 
