@@ -8,6 +8,7 @@
 #include <stdio.h>
 
 #include "stl.hpp"
+#include "mesh.hpp"
 
 const size_t BINARY_HEADER = 80;
 const size_t BINARY_STRIDE = 12 * 4 + 2;
@@ -38,6 +39,14 @@ static bool is_ascii_stl(FILE *file)
   return (file_size != BINARY_HEADER + 4 + BINARY_STRIDE * num_tri);
 }
 
+static inline void print_float(float value, int digit_count)
+{
+  char buf[128];
+  gcvt(value, digit_count, buf);
+  buf[127] = '\0';
+  puts(buf);
+}
+
 /*  Binary STL spec.:
  *   UINT8[80]    – Header                  - 80 bytes
  *   UINT32       – Number of triangles     - 4 bytes
@@ -66,6 +75,7 @@ static void read_stl_binary(Mesh &mesh, FILE *file)
   {
     if (fread(float3_buf, sizeof(float[3]), 1, file) == 0)
     {
+      puts("Error reading float");
       return;
     }
     mesh.add_vertex(float3_buf[0], float3_buf[1], float3_buf[2]);

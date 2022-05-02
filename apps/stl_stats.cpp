@@ -38,5 +38,7 @@ int main(int argc, char **argv)
   std::cout << "Max: " << bb_max << std::endl;
   std::cout << "Mean: " << mean << std::endl;
 
+  mesh.free();
+
   return 0;
 }
