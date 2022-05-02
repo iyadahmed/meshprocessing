@@ -57,31 +57,56 @@ static inline void print_float(float value, int digit_count)
  *     REAL32[3]   – Vertex 3               - 12 bytes
  *     UINT16      – Attribute byte count   -  2 bytes
  */
-static void read_stl_binary(Mesh &mesh, FILE *file)
-{
-  float float3_buf[3];
-  uint32_t num_tri = 0;
 
+#pragma pack(push, 1)
+struct BinarySTLTriangle
+{
+  float normal[3];
+  union
+  {
+    struct
+    {
+      float v1[3], v2[3], v3[3];
+    };
+    float verts[3][3];
+  };
+  uint16_t attribute_byte_count;
+};
+#pragma pack(pop)
+
+static BinarySTLTriangle *read_stl_binary_core(FILE *file, size_t *num_read_tris)
+{
+  uint32_t num_tri = 0;
   fseek(file, BINARY_HEADER, SEEK_SET);
   if (fread(&num_tri, sizeof(uint32_t), 1, file) < 1)
   {
     fputs("STL Importer: Failed to read binary STL triangle count", stderr);
+    return NULL;
+  }
+  auto tris = new BinarySTLTriangle[num_tri];
+  *num_read_tris = fread(tris, sizeof(BinarySTLTriangle), num_tri, file);
+  return tris;
+}
+
+static void read_stl_binary(Mesh &mesh, FILE *file)
+{
+  size_t num_tris;
+  BinarySTLTriangle *tris = read_stl_binary_core(file, &num_tris);
+  if (tris == NULL)
+  {
     return;
   }
-
-  mesh.reserve(num_tri * 3);
-
-  /* TODO: switch num_tri endianess if machine is not little endian */
-  for (int i = 0; i < num_tri; i++)
+  mesh.reserve(num_tris * 3);
+  for (size_t i = 0; i < num_tris; i++)
   {
-    if (fread(float3_buf, sizeof(float[3]), 1, file) == 0)
+    for (short j = 0; j < 3; j++)
     {
-      puts("Error reading float");
-      return;
+      auto v = tris[i].verts[j];
+      // printf("Vertex: %f, %f, %f\n", v[0], v[1], v[2]);
+      mesh.add_vertex(v[0], v[1], v[2]);
     }
-    mesh.add_vertex(float3_buf[0], float3_buf[1], float3_buf[2]);
-    fseek(file, sizeof(uint16_t), SEEK_CUR); /* Skip "Attribute byte count" */
   }
+  delete[] tris;
 }
 
 static int parse_float3_str(const char *str, float out[3])
