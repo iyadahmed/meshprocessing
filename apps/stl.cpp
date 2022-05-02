@@ -101,7 +101,8 @@ static int parse_float3_str(const char *str, float out[3])
   return 0;
 }
 
-// Returns 0 on success, 1 on error
+/* Wraper for strtof with error checking,
+ * returns 0 on success, 1 on error */
 static inline int parse_float_str(const char *str, float *out)
 {
   errno = 0;
