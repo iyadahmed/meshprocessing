@@ -70,10 +70,13 @@ public:
 
     bool parse_token(const char *token, size_t max_size)
     {
+        if (m_size - m_current_location < max_size)
+        {
+            return false;
+        }
         drop_leading_whitespace();
         size_t i = 0;
-        for (; (i < max_size) && ((m_current_location + i) < m_size);
-             i++)
+        for (; i < max_size; i++)
         {
             if (m_mem[m_current_location + i] != token[i])
             {
