@@ -7,19 +7,126 @@
 #include <cstring>
 #include <stdio.h>
 
-#include "stl.hpp"
 #include "mesh.hpp"
+#include "stl.hpp"
 
 const size_t BINARY_HEADER = 80;
 const size_t BINARY_STRIDE = 12 * 4 + 2;
 
 static inline long calc_file_size(FILE *file)
 {
+  // TODO: error checking for fseek and ftell
   fseek(file, 0, SEEK_END);
   long file_size = ftell(file);
   fseek(file, 0, SEEK_SET);
   return file_size;
 }
+
+class Buffer
+{
+private:
+  char *m_mem = NULL;
+  size_t m_size = 0;
+  size_t m_current_location = 0;
+
+public:
+  Buffer(size_t size)
+  {
+    this->m_mem = new char[size];
+    this->m_size = size;
+    this->m_current_location = 0;
+  }
+
+  size_t location()
+  {
+    return m_current_location;
+  }
+
+  size_t size()
+  {
+    return m_size;
+  }
+
+  void printn(size_t n)
+  {
+    for (int i = 0; (i < n) && ((i + this->m_current_location) < this->m_size); i++)
+    {
+      putchar(this->m_mem[this->m_current_location + i]);
+    }
+  }
+
+  static Buffer from_file(FILE *file)
+  {
+    // TODO: error checking for calc file size and fread
+    long file_size = calc_file_size(file);
+    Buffer buffer(file_size + 1);
+    buffer.m_size = fread(buffer.m_mem, 1, file_size, file);
+    buffer.m_mem[buffer.m_size] = '\0'; // Ensure null termination, for strtof to work
+    return buffer;
+  }
+
+  void drop_leading_whitespace()
+  {
+    while (this->m_current_location < m_size)
+    {
+      if (!isspace(this->m_mem[this->m_current_location]))
+      {
+        break;
+      }
+      this->m_current_location++;
+    }
+  }
+
+  void drop_leading_non_whitespace()
+  {
+    while (this->m_current_location < m_size)
+    {
+      if (isspace(this->m_mem[this->m_current_location]))
+      {
+        break;
+      }
+      this->m_current_location++;
+    }
+  }
+
+  bool parse_token(const char *token, size_t max_size)
+  {
+    this->drop_leading_whitespace();
+    size_t i = 0;
+    for (; (i < max_size) && ((this->m_current_location + i) < this->m_size); i++)
+    {
+      if (this->m_mem[this->m_current_location + i] != token[i])
+      {
+        return false;
+      }
+    }
+    this->m_current_location += i;
+    return true;
+  }
+
+  bool parse_float(float *out)
+  {
+    errno = 0;
+    char *endptr = NULL;
+    *out = strtof(this->m_mem + this->m_current_location, &endptr);
+    if ((errno != 0) || (endptr == (this->m_mem + this->m_current_location)))
+    {
+      return false;
+    }
+    this->m_current_location += (endptr - (this->m_mem + this->m_current_location));
+    return true;
+  }
+
+  bool is_end()
+  {
+    return this->m_current_location >= this->m_size;
+  }
+
+  void free()
+  {
+    delete[] this->m_mem;
+  }
+};
 
 /* Based on Blender's Python STL importer
  * https://github.com/blender/blender-addons/blob/599a8db33c45c2ad94f8d482f01b281252799770/io_mesh_stl/stl_utils.py#L62
@@ -32,7 +139,8 @@ static bool is_ascii_stl(FILE *file)
   if (num_tri == 0)
   {
     /* Number of triangles is 0, assume invalid binary */
-    perror("STL Importer: WARNING! Reported size (facet number) is 0, assuming invalid binary STL file.");
+    perror("STL Importer: WARNING! Reported size (facet number) is 0, assuming "
+           "invalid binary STL file.");
     return false;
   }
   long file_size = calc_file_size(file);
@@ -74,7 +182,8 @@ struct BinarySTLTriangle
 };
 #pragma pack(pop)
 
-static BinarySTLTriangle *read_stl_binary_core(FILE *file, size_t *num_read_tris)
+static BinarySTLTriangle *read_stl_binary_core(FILE *file,
+                                               size_t *num_read_tris)
 {
   uint32_t num_tri = 0;
   fseek(file, BINARY_HEADER, SEEK_SET);
@@ -109,92 +218,6 @@ static void read_stl_binary(Mesh &mesh, FILE *file)
   delete[] tris;
 }
 
-static int parse_float3_str(const char *str, float out[3])
-{
-  errno = 0;
-  char *startptr = (char *)str;
-  char *endptr = NULL;
-  for (int i = 0; i < 3; i++)
-  {
-    out[i] = strtof(startptr, &endptr);
-    if ((errno != 0) || (endptr == startptr))
-    {
-      return 1;
-    }
-    startptr = endptr;
-  }
-  return 0;
-}
-
-/* Wrapper for strtof with error checking,
- * returns 0 on success, 1 on error */
-static inline int parse_float_str(const char *str, float *out)
-{
-  errno = 0;
-  char *endptr = NULL;
-  *out = strtof(str, &endptr);
-  if ((errno != 0) || (endptr == str))
-  {
-    return 1;
-  }
-  return 0;
-}
-
-static char *lstrip_unsafe(const char *str)
-{
-  char *str_stripped = (char *)str;
-  while ((*str_stripped != '\0') && isspace(*str_stripped))
-  {
-    str_stripped++;
-  }
-  return str_stripped;
-}
-
-static char *lstrip_token_unsafe(const char *str)
-{
-  char *str_stripped = (char *)str;
-  while ((*str_stripped != '\0') && isspace(*str_stripped))
-  {
-    str_stripped++;
-  }
-  while ((*str_stripped != '\0') && !isspace(*str_stripped))
-  {
-    str_stripped++;
-  }
-  return str_stripped;
-}
-
-// Returns 1 on success, 0 on error
-static int read_token(FILE *file, char *buffer, size_t buffer_len)
-{
-  int c;
-  size_t i = 1; // star from 1, 0 is always read by first loop
-  // Skip leading whitespaces
-  while (((c = fgetc(file)) != EOF) && (i < buffer_len))
-  {
-    if (!isspace(c))
-    {
-      buffer[0] = (char)c;
-      break;
-    }
-  }
-  if (feof(file) || ferror(file) || (i >= buffer_len))
-  {
-    return 0;
-  }
-  // Read until whitespace
-  while (((c = fgetc(file)) != EOF) && (i < buffer_len))
-  {
-    if (isspace(c))
-    {
-      buffer[i] = '\0';
-      break;
-    }
-    buffer[i++] = (char)c;
-  }
-  return 1;
-}
-
 /*  ASCII STL spec.:
  *  solid name
  *    facet normal ni nj nk
@@ -208,54 +231,40 @@ static int read_token(FILE *file, char *buffer, size_t buffer_len)
  *  endsolid name
  */
 
-static inline void read_stl_ascii_vertex(Mesh &mesh, FILE *file)
+static inline void read_stl_ascii_vertex(Mesh &mesh, Buffer &buf)
 {
-  char token_buf[1024];
   float float3_buf[3];
   for (int i = 0; i < 3; i++)
   {
-    read_token(file, token_buf, 1024);
-    if (parse_float_str(token_buf, float3_buf + i))
+    if (!buf.parse_float(float3_buf + i))
     {
-      perror("STL Importer: ERROR! failed to parse float.");
+      puts("STL Importer: ERROR! failed to parse float.");
       return;
     }
   }
   mesh.add_vertex(float3_buf[0], float3_buf[1], float3_buf[2]);
 }
 
-static inline void read_stl_ascii_facet(Mesh &mesh, FILE *file)
-{
-  char token_buf[1024];
-  float float3_buf[3];
-  read_token(file, token_buf, 1024); // Skip "normal"
-  for (int i = 0; i < 3; i++)
-  {
-    read_token(file, token_buf, 1024);
-    parse_float_str(token_buf, float3_buf + i);
-  }
-  // TODO: do something with the normal vector
-}
-
 static void read_stl_ascii(Mesh &mesh, FILE *file)
 {
-  char token_buf[1024];
-
+  char tmp[1024];
   fseek(file, 0, SEEK_SET);
-  fgets(token_buf, 1024, file); // Skip header line
+  fgets(tmp, 1024, file); // Skip header line
 
-  while (read_token(file, token_buf, 1024))
+  auto buf = Buffer::from_file(file);
+  while (!buf.is_end())
   {
-    // if (memcmp(token_buf, "facet", 5) == 0)
-    // {
-    //   read_stl_ascii_facet(mesh, file);
-    // }
-    // else
-    if (memcmp(token_buf, "vertex", 6) == 0)
+    if (buf.parse_token("vertex", 6))
     {
-      read_stl_ascii_vertex(mesh, file);
+      read_stl_ascii_vertex(mesh, buf);
+    }
+    else
+    {
+      buf.drop_leading_whitespace();
+      buf.drop_leading_non_whitespace();
     }
   }
+  buf.free();
 }
 
 void read_stl(Mesh &mesh, const char *filepath)
