@@ -34,6 +34,7 @@ int main(int argc, char **argv)
   }
   mean /= mesh.count;
 
+  std::cout << "Number of Triangles = " << mesh.count / 3 << std::endl;
   std::cout << "Min: " << bb_min << std::endl;
   std::cout << "Max: " << bb_max << std::endl;
   std::cout << "Mean: " << mean << std::endl;
