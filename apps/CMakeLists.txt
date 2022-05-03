@@ -1,9 +1,11 @@
 add_executable(
     stl_stats
-    stl_stats.cpp
-    stl.cpp
-               
-    stl.hpp
+    stl_stats.cc
+    ./stl/importer.cc
+
+    ./stl/ascii.hh
+    ./stl/binary.hh               
+    ./stl/importer.hh
     vec3.hh)
 
 
