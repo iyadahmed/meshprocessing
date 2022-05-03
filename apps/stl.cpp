@@ -32,7 +32,7 @@ static bool is_ascii_stl(FILE *file)
   if (num_tri == 0)
   {
     /* Number of triangles is 0, assume invalid binary */
-    fputs("STL Importer: WARNING! Reported size (facet number) is 0, assuming invalid binary STL file.", stderr);
+    perror("STL Importer: WARNING! Reported size (facet number) is 0, assuming invalid binary STL file.");
     return false;
   }
   long file_size = calc_file_size(file);
@@ -80,7 +80,7 @@ static BinarySTLTriangle *read_stl_binary_core(FILE *file, size_t *num_read_tris
   fseek(file, BINARY_HEADER, SEEK_SET);
   if (fread(&num_tri, sizeof(uint32_t), 1, file) < 1)
   {
-    fputs("STL Importer: Failed to read binary STL triangle count", stderr);
+    perror("STL Importer: Failed to read binary STL triangle count.");
     return NULL;
   }
   auto tris = new BinarySTLTriangle[num_tri];
@@ -217,7 +217,7 @@ static inline void read_stl_ascii_vertex(Mesh &mesh, FILE *file)
     read_token(file, token_buf, 1024);
     if (parse_float_str(token_buf, float3_buf + i))
     {
-      fputs("STL Importer: ERROR! failed to parse float.", stderr);
+      perror("STL Importer: ERROR! failed to parse float.");
       return;
     }
   }
@@ -265,22 +265,18 @@ void read_stl(Mesh &mesh, const char *filepath)
 
   if (file == NULL)
   {
-    fputs("Error opening file: ", stderr);
-    fputs(filepath, stderr);
+    fprintf(stderr, "Error opening file: %s\n", filepath);
     return;
   }
 
-  /* TODO: check if STL is valid */
   if (is_ascii_stl(file))
   {
-    puts("Reading ASCII STL: ");
-    puts(filepath);
+    printf("Reading ASCII STL: %s\n", filepath);
     read_stl_ascii(mesh, file);
   }
   else
   {
-    puts("Reading Binary STL");
-    puts(filepath);
+    printf("Reading BINARY STL: %s\n", filepath);
     read_stl_binary(mesh, file);
   }
   fclose(file);
