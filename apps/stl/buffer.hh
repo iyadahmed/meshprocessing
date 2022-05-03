@@ -93,8 +93,7 @@ public:
         {
             return false;
         }
-        m_current_location +=
-            (endptr - (m_mem + m_current_location));
+        m_current_location = endptr - m_mem;
         return true;
     }
 
