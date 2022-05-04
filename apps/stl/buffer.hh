@@ -24,11 +24,14 @@ public:
 
     size_t size() { return m_size; }
 
-    void printn(size_t n)
+    /* Print a number of characters from buffer to a stream
+     * if there are enough characters, print as much as what we can
+     */
+    void fprintn(FILE *stream, size_t max_num_chars)
     {
-        for (int i = 0; (i < n) && ((i + m_current_location) < m_size); i++)
+        for (int i = 0; (i < max_num_chars) && ((i + m_current_location) < m_size); i++)
         {
-            putchar(m_mem[m_current_location + i]);
+            putc(m_mem[m_current_location + i], stream);
         }
     }
 

@@ -17,7 +17,7 @@ static bool is_ascii_stl(FILE *file)
     {
         /* Number of triangles is 0, assume invalid binary */
         fputs("STL Importer: WARNING! Reported size (facet number) is 0, assuming "
-              "invalid binary STL file.",
+              "invalid binary STL file.\n",
               stderr);
         return false;
     }

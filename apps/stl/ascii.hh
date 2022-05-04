@@ -49,7 +49,9 @@ static void read_stl_ascii(TriMesh &mesh, FILE *file)
             }
             else
             {
-                fputs("Token mismatch, expected \"vertex\".", stderr);
+                fprintf(stderr, "Token mismatch, expected \"vertex\", found ");
+                buf.fprintn(stderr, 6);
+                fputc('\n', stderr);
             }
             if (buf.parse_token("vertex", 6))
             {
@@ -57,7 +59,9 @@ static void read_stl_ascii(TriMesh &mesh, FILE *file)
             }
             else
             {
-                fputs("Token mismatch, expected \"vertex\".", stderr);
+                fprintf(stderr, "Token mismatch, expected \"vertex\", found ");
+                buf.fprintn(stderr, 6);
+                fputc('\n', stderr);
             }
             mesh.add_triangle(current_triangle);
         }
