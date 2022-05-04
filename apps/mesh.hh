@@ -2,43 +2,64 @@
 
 #include "vec3.hh"
 
-class Mesh
+union Triangle
+{
+
+    struct
+    {
+        float v1[3], v2[3], v3[3];
+    };
+    float verts[3][3];
+};
+
+class TriMesh
 {
 private:
-    size_t capacity = 0;
+    size_t m_capacity = 0;
+    Triangle *m_tris = nullptr;
+    size_t m_count = 0;
 
 public:
-    Vec3 *verts = nullptr;
-    size_t count = 0;
-    Mesh(size_t num_verts_initial = 0)
+    TriMesh(size_t num_verts_initial = 0)
     {
-        this->capacity = (num_verts_initial > 0) ? num_verts_initial : 1;
-        this->verts = new Vec3[capacity];
+        m_capacity = (num_verts_initial > 0) ? num_verts_initial : 1;
+        m_tris = new Triangle[m_capacity];
+    }
+    /* Number of Triangles in mesh */
+    size_t count() const
+    {
+        return m_count;
+    }
+    Triangle &get_tri(size_t index)
+    {
+        if (index < m_count)
+        {
+            return m_tris[index];
+        }
+        throw std::out_of_range("Index out of range");
     }
     void reserve(size_t new_capacity)
     {
-        if (new_capacity > this->capacity)
+        if (new_capacity > m_capacity)
         {
-            this->capacity = new_capacity;
-            this->verts = (Vec3 *)realloc(this->verts, this->capacity * sizeof(Vec3));
+            m_capacity = new_capacity;
+            m_tris = (Triangle *)realloc(m_tris, m_capacity * sizeof(Triangle));
         }
     }
-    void add_vertex(float x, float y, float z)
+    void add_triangle(Triangle &triangle)
     {
-        if (this->count >= this->capacity)
+        if (m_count >= m_capacity)
         {
-            this->reserve(this->capacity * 2);
+            reserve(m_capacity * 2);
         }
-        this->verts[count].x = x;
-        this->verts[count].y = y;
-        this->verts[count].z = z;
-        this->count++;
+        m_tris[m_count] = triangle;
+        m_count++;
     }
     void free()
     {
-        if (this->verts)
+        if (m_tris)
         {
-            delete[] this->verts;
+            delete[] m_tris;
         }
     }
 };

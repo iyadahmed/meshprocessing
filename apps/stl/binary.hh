@@ -15,7 +15,7 @@ const size_t BINARY_HEADER = 80;
 const size_t BINARY_STRIDE = 12 * 4 + 2;
 
 #pragma pack(push, 1)
-struct BinarySTLTriangle
+struct STLBinaryTriangle
 {
     float normal[3];
     union
@@ -47,7 +47,7 @@ static inline void print_float(float value, int digit_count)
  *     REAL32[3]   – Vertex 3               - 12 bytes
  *     UINT16      – Attribute byte count   -  2 bytes
  */
-static BinarySTLTriangle *read_stl_binary_core(FILE *file,
+static STLBinaryTriangle *read_stl_binary_core(FILE *file,
                                                size_t *num_read_tris)
 {
     uint32_t num_tri = 0;
@@ -57,15 +57,16 @@ static BinarySTLTriangle *read_stl_binary_core(FILE *file,
         puts("STL Importer: Failed to read binary STL triangle count.");
         return NULL;
     }
-    auto tris = new BinarySTLTriangle[num_tri];
-    *num_read_tris = fread(tris, sizeof(BinarySTLTriangle), num_tri, file);
+    auto tris = new STLBinaryTriangle[num_tri];
+    *num_read_tris = fread(tris, sizeof(STLBinaryTriangle), num_tri, file);
     return tris;
 }
 
-static void read_stl_binary(Mesh &mesh, FILE *file)
+static void read_stl_binary(TriMesh &mesh, FILE *file)
 {
     size_t num_tris;
-    BinarySTLTriangle *tris = read_stl_binary_core(file, &num_tris);
+    Triangle current_triangle{};
+    STLBinaryTriangle *tris = read_stl_binary_core(file, &num_tris);
     if (tris == NULL)
     {
         return;
@@ -75,10 +76,9 @@ static void read_stl_binary(Mesh &mesh, FILE *file)
     {
         for (short j = 0; j < 3; j++)
         {
-            auto v = tris[i].verts[j];
-            // printf("Vertex: %f, %f, %f\n", v[0], v[1], v[2]);
-            mesh.add_vertex(v[0], v[1], v[2]);
+            memcpy(current_triangle.verts, tris[i].verts, sizeof(float[3][3]));
         }
+        mesh.add_triangle(current_triangle);
     }
     delete[] tris;
 }

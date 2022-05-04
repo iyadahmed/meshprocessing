@@ -14,7 +14,8 @@ struct Plane
 
 Vec3 dot_tri_plane(Triangle &t, Plane &p)
 {
-    return Vec3((t.a - p.point).dot(p.normal), (t.b - p.point).dot(p.normal), (t.c - p.point).dot(p.normal));
+    return Vec3((t.a - p.point).dot(p.normal), (t.b - p.point).dot(p.normal),
+                (t.c - p.point).dot(p.normal));
 }
 
 void tri_tri_intersection(Triangle t1, Triangle t2)

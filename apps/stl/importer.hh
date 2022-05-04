@@ -12,4 +12,4 @@ static inline long calc_file_size(FILE *file)
     return file_size;
 }
 
-void read_stl(Mesh &mesh, const char *filepath);
+void read_stl(TriMesh &mesh, const char *filepath);

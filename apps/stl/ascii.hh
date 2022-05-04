@@ -1,7 +1,7 @@
 #pragma once
 
-#include "buffer.hh"
 #include "../mesh.hh"
+#include "buffer.hh"
 
 /*  ASCII STL spec.:
  *  solid name
@@ -16,32 +16,50 @@
  *  endsolid name
  */
 
-static inline void read_stl_ascii_vertex(Mesh &mesh, Buffer &buf)
+static inline void read_stl_ascii_vertex(float out[3], Buffer &buf)
 {
-    float float3_buf[3];
     for (int i = 0; i < 3; i++)
     {
-        if (!buf.parse_float(float3_buf + i))
+        if (!buf.parse_float(out + i))
         {
             puts("STL Importer: ERROR! failed to parse float.");
             return;
         }
     }
-    mesh.add_vertex(float3_buf[0], float3_buf[1], float3_buf[2]);
 }
 
-static void read_stl_ascii(Mesh &mesh, FILE *file)
+static void read_stl_ascii(TriMesh &mesh, FILE *file)
 {
     char tmp[1024];
     fseek(file, 0, SEEK_SET);
     fgets(tmp, 1024, file); // Skip header line
 
+    Triangle current_triangle{};
+
     auto buf = Buffer::from_file(file);
+
     while (!buf.is_end())
     {
         if (buf.parse_token("vertex", 6))
         {
-            read_stl_ascii_vertex(mesh, buf);
+            read_stl_ascii_vertex(current_triangle.v1, buf);
+            if (buf.parse_token("vertex", 6))
+            {
+                read_stl_ascii_vertex(current_triangle.v2, buf);
+            }
+            else
+            {
+                fputs("Token mismatch, expected \"vertex\".", stderr);
+            }
+            if (buf.parse_token("vertex", 6))
+            {
+                read_stl_ascii_vertex(current_triangle.v3, buf);
+            }
+            else
+            {
+                fputs("Token mismatch, expected \"vertex\".", stderr);
+            }
+            mesh.add_triangle(current_triangle);
         }
         else
         {

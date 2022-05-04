@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cmath>
-#include <stdexcept>
 #include <iostream>
+#include <stdexcept>
 
 class Vec3
 {
@@ -10,6 +10,12 @@ public:
     double x, y, z;
 
     Vec3(double x = 0.0, double y = 0.0, double z = 0.0) : x(x), y(y), z(z) {}
+    Vec3(float buf[3])
+    {
+        x = buf[0];
+        y = buf[1];
+        z = buf[2];
+    }
 
     // https://stackoverflow.com/a/66663070/8094047
     friend auto operator<<(std::ostream &os, Vec3 const &m) -> std::ostream &
@@ -45,20 +51,11 @@ public:
         return out;
     }
 
-    double length_squared() const
-    {
-        return x * x + y * y + z * z;
-    }
+    double length_squared() const { return x * x + y * y + z * z; }
 
-    double length() const
-    {
-        return sqrt(length_squared());
-    }
+    double length() const { return sqrt(length_squared()); }
 
-    void normalize()
-    {
-        *this /= length();
-    }
+    void normalize() { *this /= length(); }
 
     Vec3 normalized() const
     {
@@ -76,10 +73,7 @@ public:
         return Vec3(x - other.x, y - other.y, z - other.z);
     }
 
-    Vec3 operator-() const
-    {
-        return Vec3(-x, -y, -z);
-    }
+    Vec3 operator-() const { return Vec3(-x, -y, -z); }
 
     Vec3 operator*(const double t)
     {
@@ -104,10 +98,9 @@ public:
         return *this;
     }
 
-    Vec3 &operator/=(const double t)
-    {
-        return *this *= 1.0 / t;
-    }
+    Vec3 &operator/=(const double t) { return *this *= 1.0 / t; }
+
+    Vec3 operator/(const double t) const { return Vec3(x / t, y / t, z / t); }
 
     double &operator[](const size_t index)
     {

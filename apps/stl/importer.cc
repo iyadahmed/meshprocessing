@@ -16,15 +16,16 @@ static bool is_ascii_stl(FILE *file)
     if (num_tri == 0)
     {
         /* Number of triangles is 0, assume invalid binary */
-        perror("STL Importer: WARNING! Reported size (facet number) is 0, assuming "
-               "invalid binary STL file.");
+        fputs("STL Importer: WARNING! Reported size (facet number) is 0, assuming "
+              "invalid binary STL file.",
+              stderr);
         return false;
     }
     long file_size = calc_file_size(file);
     return (file_size != BINARY_HEADER + 4 + BINARY_STRIDE * num_tri);
 }
 
-void read_stl(Mesh &mesh, const char *filepath)
+void read_stl(TriMesh &mesh, const char *filepath)
 {
     /* TODO: support utf8 paths on Windows */
     FILE *file = fopen(filepath, "rb");

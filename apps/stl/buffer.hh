@@ -26,8 +26,7 @@ public:
 
     void printn(size_t n)
     {
-        for (int i = 0; (i < n) && ((i + m_current_location) < m_size);
-             i++)
+        for (int i = 0; (i < n) && ((i + m_current_location) < m_size); i++)
         {
             putchar(m_mem[m_current_location + i]);
         }
@@ -39,8 +38,7 @@ public:
         long file_size = calc_file_size(file);
         Buffer buffer(file_size + 1);
         buffer.m_size = fread(buffer.m_mem, 1, file_size, file);
-        buffer.m_mem[buffer.m_size] =
-            '\0'; // Ensure null termination, for strtof to work
+        buffer.m_mem[buffer.m_size] = '\0';
         return buffer;
     }
 

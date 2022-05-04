@@ -14,7 +14,7 @@ int main(int argc, char **argv)
     }
 
     auto t0 = std::chrono::high_resolution_clock::now();
-    Mesh mesh(0);
+    TriMesh mesh(0);
     read_stl(mesh, argv[1]);
     auto t1 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> time = t1 - t0;
@@ -24,17 +24,18 @@ int main(int argc, char **argv)
     Vec3 bb_max(-INFINITY, -INFINITY, -INFINITY);
     Vec3 mean(0.0, 0.0, 0.0);
 
-    for (int i = 0; mesh.verts && (i < mesh.count); i++)
+    for (int i = 0; i < mesh.count(); i++)
     {
-        auto vec = mesh.verts[i];
-
-        Vec3::min(bb_min, bb_min, vec);
-        Vec3::max(bb_max, bb_max, vec);
-        mean += vec;
+        for (int j = 0; j < 3; j++)
+        {
+            auto vec = Vec3(mesh.get_tri(i).verts[j]);
+            Vec3::min(bb_min, bb_min, vec);
+            Vec3::max(bb_max, bb_max, vec);
+            mean += vec / (mesh.count() * 3);
+        }
     }
-    mean /= mesh.count;
 
-    std::cout << "Number of Triangles = " << mesh.count / 3 << std::endl;
+    std::cout << "Number of Triangles = " << mesh.count() << std::endl;
     std::cout << "Min: " << bb_min << std::endl;
     std::cout << "Max: " << bb_max << std::endl;
     std::cout << "Mean: " << mean << std::endl;
