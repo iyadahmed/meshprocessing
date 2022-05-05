@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../mesh.hh"
+#include "../trimesh.hh"
 #include "buffer.hh"
 
 /*  ASCII STL spec.:

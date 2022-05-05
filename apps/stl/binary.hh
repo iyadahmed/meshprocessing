@@ -9,7 +9,7 @@
 #include <cstring>
 #include <stdio.h>
 
-#include "../mesh.hh"
+#include "../trimesh.hh"
 
 const size_t BINARY_HEADER = 80;
 const size_t BINARY_STRIDE = 12 * 4 + 2;

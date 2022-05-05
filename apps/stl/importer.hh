@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../vec3.hh"
-#include "../mesh.hh"
+#include "../trimesh.hh"
 
 static inline long calc_file_size(FILE *file)
 {
