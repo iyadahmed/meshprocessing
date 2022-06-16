@@ -1,9 +1,9 @@
 #include <chrono>
 #include <cmath>
-#include <cstdio>
 #include <iostream>
 
-#include "stl/importer.hh"
+#include "../src/io/stl/importer.hh"
+#include "../src/io/vec3.hh"
 
 int main(int argc, char **argv)
 {
@@ -24,18 +24,19 @@ int main(int argc, char **argv)
     Vec3 bb_max(-INFINITY, -INFINITY, -INFINITY);
     Vec3 mean(0.0, 0.0, 0.0);
 
-    for (int i = 0; i < mesh.count(); i++)
+    // FIXME: Wrong bounding box results
+    for (int i = 0; i < mesh.tris_count(); i++)
     {
         for (int j = 0; j < 3; j++)
         {
             auto vec = Vec3(mesh.get_tri(i).verts[j]);
             Vec3::min(bb_min, bb_min, vec);
             Vec3::max(bb_max, bb_max, vec);
-            mean += vec / (mesh.count() * 3);
+            mean += vec / (mesh.tris_count() * 3);
         }
     }
 
-    std::cout << "Number of Triangles = " << mesh.count() << std::endl;
+    std::cout << "Number of Triangles = " << mesh.tris_count() << std::endl;
     std::cout << "Min: " << bb_min << std::endl;
     std::cout << "Max: " << bb_max << std::endl;
     std::cout << "Mean: " << mean << std::endl;
