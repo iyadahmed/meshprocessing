@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <cstring>
 
 #include "trimesh.hh"
 
@@ -26,8 +27,11 @@ void TriMesh::reserve(size_t tris_num)
 {
     if (tris_num > cap_)
     {
-        cap_ = tris_num;
-        tris_ = (Triangle *)realloc(tris_, cap_ * sizeof(Triangle));
+        auto cap_new = tris_num;
+        auto tris_new = new Triangle[cap_new];
+        memcpy(tris_new, tris_, sizeof(Triangle[cap_]));
+        tris_ = tris_new;
+        cap_ = cap_new;
     }
 }
 
