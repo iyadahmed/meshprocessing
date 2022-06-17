@@ -2,4 +2,7 @@
 
 #include "../trimesh.hh"
 
-void read_stl(TriMesh &mesh, const char *filepath);
+namespace mp::io::stl
+{
+    void read_stl(TriMesh &mesh, const char *filepath);
+}

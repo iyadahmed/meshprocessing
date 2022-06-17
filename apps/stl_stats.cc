@@ -15,7 +15,7 @@ int main(int argc, char **argv)
 
     auto t0 = std::chrono::high_resolution_clock::now();
     TriMesh mesh(0);
-    read_stl(mesh, argv[1]);
+    mp::io::stl::read_stl(mesh, argv[1]);
     auto t1 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> time = t1 - t0;
     std::cout << "Import finished in " << time.count() << " seconds" << std::endl;

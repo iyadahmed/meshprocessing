@@ -17,4 +17,7 @@
  *  endsolid name
  */
 
-void read_stl_ascii(TriMesh &mesh, std::ifstream &ifs);
+namespace mp::io::stl
+{
+    void read_stl_ascii(TriMesh &mesh, std::ifstream &ifs);
+}
