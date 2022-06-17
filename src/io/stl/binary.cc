@@ -1,6 +1,6 @@
 #include <cstring>
 
-#include "../trimesh.hh"
+#include "trimesh.hh"
 #include "binary.hh"
 
 namespace mp::io::stl

@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-#include "../trimesh.hh"
+#include "trimesh.hh"
 
 /*  ASCII STL spec.:
  *  solid name

@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-#include "../trimesh.hh"
+#include "trimesh.hh"
 
 namespace mp::io::stl
 {

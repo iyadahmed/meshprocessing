@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../trimesh.hh"
+#include "trimesh.hh"
 
 namespace mp::io::stl
 {

@@ -1,6 +1,6 @@
 #include <cstring>
 
-#include "fast_float/fast_float.h"
+#include "../fast_float/fast_float.h"
 #include "string_buffer.hh"
 
 StringBuffer::StringBuffer(char *buf, size_t len)

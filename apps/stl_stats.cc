@@ -2,8 +2,9 @@
 #include <cmath>
 #include <iostream>
 
-#include "../src/io/stl/importer.hh"
-#include "../src/io/vec3.hh"
+#include "importer.hh"
+#include "vec3.hh"
+#include "trimesh.hh"
 
 int main(int argc, char **argv)
 {
