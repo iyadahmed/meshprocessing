@@ -4,49 +4,49 @@
 
 #include "vec3.hh"
 
-Vec3::Vec3(float x, float y, float z) : x_(x), y_(y), z_(z) {}
+Vec3::Vec3(float x, float y, float z) : x(x), y(y), z(z) {}
 Vec3::Vec3(const float buf[3])
 {
-    x_ = buf[0];
-    y_ = buf[1];
-    z_ = buf[2];
+    x = buf[0];
+    y = buf[1];
+    z = buf[2];
 }
 
 // https://stackoverflow.com/a/66663070/8094047
 std::ostream &operator<<(std::ostream &os, Vec3 const &v)
 {
-    return os << "<Vector (" << v.x_ << ", " << v.y_ << ", " << v.z_ << ")>";
+    return os << "<Vector (" << v.x << ", " << v.y << ", " << v.z << ")>";
 }
 
 void Vec3::min(Vec3 &out, const Vec3 &a, const Vec3 &b)
 {
-    out.x_ = fminf(a.x_, b.x_);
-    out.y_ = fminf(a.y_, b.y_);
-    out.z_ = fminf(a.z_, b.z_);
+    out.x = fminf(a.x, b.x);
+    out.y = fminf(a.y, b.y);
+    out.z = fminf(a.z, b.z);
 }
 
 void Vec3::max(Vec3 &out, const Vec3 &a, const Vec3 &b)
 {
-    out.x_ = fmaxf(a.x_, b.x_);
-    out.y_ = fmaxf(a.y_, b.y_);
-    out.z_ = fmaxf(a.z_, b.z_);
+    out.x = fmaxf(a.x, b.x);
+    out.y = fmaxf(a.y, b.y);
+    out.z = fmaxf(a.z, b.z);
 }
 
 float Vec3::dot(const Vec3 &other) const
 {
-    return x_ * other.x_ + y_ * other.y_ + z_ * other.z_;
+    return x * other.x + y * other.y + z * other.z;
 }
 
 Vec3 Vec3::cross(const Vec3 &other) const
 {
     Vec3 out;
-    out.x_ = y_ * other.z_ - z_ * other.y_;
-    out.y_ = z_ * other.x_ - x_ * other.z_;
-    out.z_ = x_ * other.y_ - y_ * other.x_;
+    out.x = y * other.z - z * other.y;
+    out.y = z * other.x - x * other.z;
+    out.z = x * other.y - y * other.x;
     return out;
 }
 
-float Vec3::length_squared() const { return x_ * x_ + y_ * y_ + z_ * z_; }
+float Vec3::length_squared() const { return x * x + y * y + z * z; }
 
 float Vec3::length() const { return sqrt(length_squared()); }
 
@@ -55,20 +55,20 @@ void Vec3::normalize() { *this /= length(); }
 Vec3 Vec3::normalized() const
 {
     float l = length();
-    return Vec3(x_ / l, y_ / l, z_ / l);
+    return Vec3(x / l, y / l, z / l);
 }
 
 Vec3 Vec3::operator+(const Vec3 &other) const
 {
-    return Vec3(x_ + other.x_, y_ + other.y_, z_ + other.z_);
+    return Vec3(x + other.x, y + other.y, z + other.z);
 }
 
 Vec3 Vec3::operator-(const Vec3 &other) const
 {
-    return Vec3(x_ - other.x_, y_ - other.y_, z_ - other.z_);
+    return Vec3(x - other.x, y - other.y, z - other.z);
 }
 
-Vec3 Vec3::operator-() const { return Vec3(-x_, -y_, -z_); }
+Vec3 Vec3::operator-() const { return Vec3(-x, -y, -z); }
 
 Vec3 Vec3::operator*(float t)
 {
@@ -79,37 +79,37 @@ Vec3 Vec3::operator*(float t)
 
 Vec3 &Vec3::operator+=(const Vec3 &other)
 {
-    x_ += other.x_;
-    y_ += other.y_;
-    z_ += other.z_;
+    x += other.x;
+    y += other.y;
+    z += other.z;
     return *this;
 }
 
 Vec3 &Vec3::operator*=(float t)
 {
-    x_ *= t;
-    y_ *= t;
-    z_ *= t;
+    x *= t;
+    y *= t;
+    z *= t;
     return *this;
 }
 
 Vec3 &Vec3::operator/=(float t) { return *this *= 1.0 / t; }
 
-Vec3 Vec3::operator/(float t) const { return Vec3(x_ / t, y_ / t, z_ / t); }
+Vec3 Vec3::operator/(float t) const { return Vec3(x / t, y / t, z / t); }
 
 float &Vec3::operator[](size_t index)
 {
     if (index == 0)
     {
-        return x_;
+        return x;
     }
     else if (index == 1)
     {
-        return y_;
+        return y;
     }
     else if (index == 2)
     {
-        return z_;
+        return z;
     }
 
     throw std::out_of_range("Index out of range");

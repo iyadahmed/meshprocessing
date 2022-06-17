@@ -6,7 +6,7 @@
 class Vec3
 {
 public:
-    float x_, y_, z_;
+    float x, y, z;
 
     Vec3(float x = 0.0, float y = 0.0, float z = 0.0);
     Vec3(const float buf[3]);
