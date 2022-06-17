@@ -1,8 +1,9 @@
 #pragma once
 
 #include <fstream>
+#include <vector>
 
-#include "trimesh.hh"
+#include "importer.hh"
 
 /*  ASCII STL spec.:
  *  solid name
@@ -19,5 +20,5 @@
 
 namespace mp::io::stl
 {
-    void read_stl_ascii(TriMesh &mesh, std::ifstream &ifs);
+    void read_stl_ascii(std::ifstream &ifs, std::vector<Triangle> &tris);
 }

@@ -1,8 +1,9 @@
 #pragma once
 
 #include <fstream>
+#include <vector>
 
-#include "trimesh.hh"
+#include "importer.hh"
 
 namespace mp::io::stl
 {
@@ -13,7 +14,15 @@ namespace mp::io::stl
     struct STLBinaryTriangle
     {
         float custom_normal[3];
-        float v1[3], v2[3], v3[3];
+        union
+        {
+            struct
+            {
+                float v1[3], v2[3], v3[3];
+            };
+            float verts[3][3];
+            Triangle tri;
+        };
         uint16_t attribute_byte_count;
     };
 #pragma pack(pop)
@@ -29,5 +38,5 @@ namespace mp::io::stl
      *     UINT16      – Attribute byte count   -  2 bytes
      */
 
-    void read_stl_binary(TriMesh &mesh, std::ifstream &ifs);
+    void read_stl_binary(std::ifstream &ifs, std::vector<Triangle> &tris);
 }

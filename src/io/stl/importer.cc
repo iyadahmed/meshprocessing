@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <fstream>
+#include <vector>
 
 #include "ascii.hh"
 #include "binary.hh"
@@ -7,7 +8,7 @@
 
 namespace mp::io::stl
 {
-    void read_stl(TriMesh &mesh, const char *filepath)
+    void read_stl(const char *filepath, std::vector<Triangle> &tris)
     {
         std::ifstream ifs(filepath, std::ios::binary);
 
@@ -23,11 +24,11 @@ namespace mp::io::stl
 
         if (is_binary_stl)
         {
-            read_stl_binary(mesh, ifs);
+            read_stl_binary(ifs, tris);
         }
         else
         {
-            read_stl_ascii(mesh, ifs);
+            read_stl_ascii(ifs, tris);
         }
     }
 }

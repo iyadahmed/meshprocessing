@@ -1,17 +1,15 @@
-#include <fstream>
-
 #include "string_buffer.hh"
-#include "trimesh.hh"
+#include "ascii.hh"
 
 namespace mp::io::stl
 {
-    void read_stl_ascii(TriMesh &mesh, std::ifstream &ifs)
+    void read_stl_ascii(std::ifstream &ifs, std::vector<Triangle> &tris)
     {
         std::string str((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
         StringBuffer str_buf(&str[0], str.size());
 
-        const int num_reserved_tris = 1024;
-        mesh.reserve(num_reserved_tris);
+        /* Reserve some amount of triangles to speed up things */
+        tris.reserve(1024);
 
         Triangle tri_buf;
         str_buf.drop_line(); /* Skip header line */
@@ -19,16 +17,16 @@ namespace mp::io::stl
         {
             if (str_buf.parse_token("vertex", 6))
             {
-                str_buf.parse_float3(tri_buf.v1);
+                str_buf.parse_float3(tri_buf.verts[0]);
                 if (str_buf.parse_token("vertex", 6))
                 {
-                    str_buf.parse_float3(tri_buf.v2);
+                    str_buf.parse_float3(tri_buf.verts[1]);
                 }
                 if (str_buf.parse_token("vertex", 6))
                 {
-                    str_buf.parse_float3(tri_buf.v3);
+                    str_buf.parse_float3(tri_buf.verts[2]);
                 }
-                mesh.add_triangle(tri_buf);
+                tris.push_back(tri_buf);
             }
             // else if (str_buf.parse_token("facet", 5))
             // {
