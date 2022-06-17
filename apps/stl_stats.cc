@@ -24,7 +24,6 @@ int main(int argc, char **argv)
     Vec3 bb_max(-INFINITY, -INFINITY, -INFINITY);
     Vec3 mean(0.0, 0.0, 0.0);
 
-    // FIXME: Wrong bounding box results
     for (int i = 0; i < mesh.tris_count(); i++)
     {
         for (int j = 0; j < 3; j++)
