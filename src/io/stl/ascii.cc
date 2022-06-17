@@ -1,6 +1,6 @@
 #include <fstream>
 
-#include "string_buffer.hh"
+#include "../string_buffer.hh"
 #include "../trimesh.hh"
 
 namespace mp::io::stl
