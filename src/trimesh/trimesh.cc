@@ -30,6 +30,7 @@ void TriMesh::reserve(size_t tris_num)
         auto cap_new = tris_num;
         auto tris_new = new Triangle[cap_new];
         memcpy(tris_new, tris_, sizeof(Triangle[cap_]));
+        delete[] tris_;
         tris_ = tris_new;
         cap_ = cap_new;
     }
