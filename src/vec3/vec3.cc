@@ -20,16 +20,16 @@ std::ostream &operator<<(std::ostream &os, Vec3 const &v)
 
 void Vec3::min(Vec3 &out, const Vec3 &a, const Vec3 &b)
 {
-    out.x_ = fmin(a.x_, b.x_);
-    out.y_ = fmin(a.y_, b.y_);
-    out.z_ = fmin(a.z_, b.z_);
+    out.x_ = fminf(a.x_, b.x_);
+    out.y_ = fminf(a.y_, b.y_);
+    out.z_ = fminf(a.z_, b.z_);
 }
 
 void Vec3::max(Vec3 &out, const Vec3 &a, const Vec3 &b)
 {
-    out.x_ = fmax(a.x_, b.x_);
-    out.y_ = fmax(a.y_, b.y_);
-    out.z_ = fmax(a.z_, b.z_);
+    out.x_ = fmaxf(a.x_, b.x_);
+    out.y_ = fmaxf(a.y_, b.y_);
+    out.z_ = fmaxf(a.z_, b.z_);
 }
 
 float Vec3::dot(const Vec3 &other) const
