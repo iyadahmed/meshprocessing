@@ -13,6 +13,8 @@ public:
     friend std::ostream &operator<<(std::ostream &os, Vec3 const &v);
     static void min(Vec3 &out, const Vec3 &a, const Vec3 &b);
     static void max(Vec3 &out, const Vec3 &a, const Vec3 &b);
+    void min(const Vec3 &other);
+    void max(const Vec3 &other);
     float dot(const Vec3 &other) const;
     Vec3 cross(const Vec3 &b) const;
     float length_squared() const;

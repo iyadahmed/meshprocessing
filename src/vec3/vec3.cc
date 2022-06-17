@@ -32,6 +32,20 @@ void Vec3::max(Vec3 &out, const Vec3 &a, const Vec3 &b)
     out.z = fmaxf(a.z, b.z);
 }
 
+void Vec3::min(const Vec3 &other)
+{
+    x = fminf(x, other.x);
+    y = fminf(y, other.y);
+    z = fminf(z, other.z);
+}
+
+void Vec3::max(const Vec3 &other)
+{
+    x = fmaxf(x, other.x);
+    y = fmaxf(y, other.y);
+    z = fmaxf(z, other.z);
+}
+
 float Vec3::dot(const Vec3 &other) const
 {
     return x * other.x + y * other.y + z * other.z;
