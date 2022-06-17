@@ -1,5 +1,5 @@
-#include <stdexcept>
 #include <cstring>
+#include <stdexcept>
 
 #include "trimesh.hh"
 
