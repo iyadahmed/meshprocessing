@@ -54,11 +54,10 @@ int main(int argc, char **argv)
         }
     }
 
-    // FIXME: valgrind reports errors when printing #Vec3
     std::cout << "Number of Triangles = " << tris.size() << std::endl;
-    // std::cout << "Bounding Box Min: " << Vec3(bb_min) << std::endl;
-    // std::cout << "Bounding Box Max: " << Vec3(bb_max) << std::endl;
-    // std::cout << "Mean: " << mean << std::endl;
+    std::cout << "Bounding Box Min: " << Vec3(bb_min) << std::endl;
+    std::cout << "Bounding Box Max: " << Vec3(bb_max) << std::endl;
+    std::cout << "Mean: " << mean << std::endl;
 
     return 0;
 }

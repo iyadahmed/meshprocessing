@@ -11,7 +11,7 @@ namespace mp::io::stl
         /* Reserve some amount of triangles to speed up things */
         tris.reserve(1024);
 
-        Triangle tri_buf;
+        Triangle tri_buf{};
         str_buf.drop_line(); /* Skip header line */
         while (!str_buf.is_empty())
         {
