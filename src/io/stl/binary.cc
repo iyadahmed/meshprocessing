@@ -21,9 +21,9 @@ void read_stl_binary(TriMesh &mesh, std::ifstream &ifs)
     {
         for (size_t i = 0; i < num_read_tris; i++)
         {
-            memcpy(mesh_tri_buf.v1, tris_buf[i].v1, 3);
-            memcpy(mesh_tri_buf.v2, tris_buf[i].v2, 3);
-            memcpy(mesh_tri_buf.v3, tris_buf[i].v3, 3);
+            memcpy(mesh_tri_buf.v1, tris_buf[i].v1, sizeof(float[3]));
+            memcpy(mesh_tri_buf.v2, tris_buf[i].v2, sizeof(float[3]));
+            memcpy(mesh_tri_buf.v3, tris_buf[i].v3, sizeof(float[3]));
             mesh.add_triangle(mesh_tri_buf);
         }
     }
