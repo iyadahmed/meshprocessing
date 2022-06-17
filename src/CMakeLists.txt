@@ -6,13 +6,13 @@ target_include_directories(string_buffer PUBLIC io/string_buffer)
 target_compile_features(string_buffer PUBLIC cxx_std_11)
 
 add_library(stl
-    io/stl/importer.cc
-    io/stl/binary.cc
-    io/stl/ascii.cc
+    io/stl/stl_importer.cc
+    io/stl/stl_importer_binary.cc
+    io/stl/stl_importer_ascii.cc
 
-    io/stl/importer.hh
-    io/stl/binary.hh
-    io/stl/ascii.hh
+    io/stl/stl_importer.hh
+    io/stl/stl_importer_binary.hh
+    io/stl/stl_importer_ascii.hh
 )
 target_include_directories(stl PUBLIC io/stl)
 target_link_libraries(stl PRIVATE string_buffer)

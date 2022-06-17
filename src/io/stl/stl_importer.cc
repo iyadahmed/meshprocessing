@@ -2,9 +2,9 @@
 #include <fstream>
 #include <vector>
 
-#include "ascii.hh"
-#include "binary.hh"
-#include "importer.hh"
+#include "stl_importer_ascii.hh"
+#include "stl_importer_binary.hh"
+#include "stl_importer.hh"
 
 namespace mp::io::stl
 {

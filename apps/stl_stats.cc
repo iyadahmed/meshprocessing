@@ -3,7 +3,7 @@
 #include <vector>
 #include <cmath>
 
-#include "importer.hh"
+#include "stl_importer.hh"
 #include "vec3.hh"
 
 static void min_f3(float out[3], const float a[3], const float b[3])

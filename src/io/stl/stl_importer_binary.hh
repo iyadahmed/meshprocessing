@@ -3,7 +3,7 @@
 #include <fstream>
 #include <vector>
 
-#include "importer.hh"
+#include "stl_importer.hh"
 
 namespace mp::io::stl
 {
