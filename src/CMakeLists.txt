@@ -6,15 +6,15 @@ target_include_directories(string_buffer PUBLIC io/string_buffer)
 target_compile_features(string_buffer PUBLIC cxx_std_11)
 
 add_library(stl
-    io/stl/stl_importer.cc
-    io/stl/stl_importer_binary.cc
-    io/stl/stl_importer_ascii.cc
+    io/stl/importer/stl_importer.cc
+    io/stl/importer/stl_importer_binary.cc
+    io/stl/importer/stl_importer_ascii.cc
 
-    io/stl/stl_importer.hh
-    io/stl/stl_importer_binary.hh
-    io/stl/stl_importer_ascii.hh
+    io/stl/importer/stl_importer.hh
+    io/stl/importer/stl_importer_binary.hh
+    io/stl/importer/stl_importer_ascii.hh
 )
-target_include_directories(stl PUBLIC io/stl)
+target_include_directories(stl PUBLIC io/stl/importer io/stl/exporter)
 target_link_libraries(stl PRIVATE string_buffer)
 target_compile_features(stl PUBLIC cxx_std_17)
 
