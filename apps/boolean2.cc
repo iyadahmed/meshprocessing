@@ -46,6 +46,7 @@ int main(int argc, char **argv)
     }
 
     auto tri_soup_1 = load_stl(argv[1]);
+    Tree tree_1(tri_soup_1.begin(), tri_soup_1.end());
 
-    std::cout << tri_soup_1.size() << std::endl;
+    auto tri_soup_2 = load_stl(argv[2]);
 }
