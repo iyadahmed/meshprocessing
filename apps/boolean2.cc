@@ -47,6 +47,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    std::cout << "CGAL Version: " << CGAL_VERSION_STR << std::endl;
+
     auto tri_soup_1 = load_stl(argv[1]);
     Tree tree_1(tri_soup_1.begin(), tri_soup_1.end());
 
