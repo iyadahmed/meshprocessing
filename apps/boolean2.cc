@@ -19,6 +19,8 @@ typedef CGAL::AABB_triangle_primitive<K, Iterator> Primitive;
 typedef CGAL::AABB_traits<K, Primitive> AABB_triangle_traits;
 typedef CGAL::AABB_tree<AABB_triangle_traits> Tree;
 
+typedef boost::optional<Tree::Intersection_and_primitive_id<Triangle>::Type> Triangle_intersection;
+
 static std::vector<Triangle> load_stl(const char *filepath)
 {
     std::vector<mp::io::stl::Triangle> tris;
@@ -49,4 +51,11 @@ int main(int argc, char **argv)
     Tree tree_1(tri_soup_1.begin(), tri_soup_1.end());
 
     auto tri_soup_2 = load_stl(argv[2]);
+
+    for (auto const &t : tri_soup_2)
+    {
+        std::vector<Triangle_intersection> intersections;
+        tree_1.all_intersections(t, std::back_inserter(intersections));
+        std::cout << intersections.size() << std::endl;
+    }
 }
