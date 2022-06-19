@@ -1,13 +1,20 @@
-#include <filesystem>
-#include <fstream>
 #include <vector>
+#include <fstream>
+#include <filesystem>
+#include <cstdint>
 
+#include "stl_exporter_binary.hh"
 #include "stl_importer_ascii.hh"
 #include "stl_importer_binary.hh"
-#include "stl_importer.hh"
+#include "stl_io.hh"
 
 namespace mp::io::stl
 {
+    void write_stl(const std::vector<Triangle> &tris, const char *filepath)
+    {
+        write_stl_binary(tris, filepath);
+    }
+
     void read_stl(const char *filepath, std::vector<Triangle> &tris)
     {
         std::ifstream ifs(filepath, std::ios::binary);

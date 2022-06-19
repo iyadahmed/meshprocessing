@@ -1,5 +1,4 @@
 #include "stl_importer_binary.hh"
-#include "stl_importer.hh"
 
 namespace mp::io::stl
 {

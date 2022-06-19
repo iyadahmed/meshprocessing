@@ -12,5 +12,7 @@ namespace mp::io::stl
         };
         float verts[3][3];
     };
+
+    void write_stl(const std::vector<Triangle> &tris, const char *filepath);
     void read_stl(const char *filepath, std::vector<Triangle> &tris);
 }

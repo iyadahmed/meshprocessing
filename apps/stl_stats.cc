@@ -3,7 +3,7 @@
 #include <vector>
 #include <cmath>
 
-#include "stl_importer.hh"
+#include "stl_io.hh"
 #include "vec3.hh"
 
 int main(int argc, char **argv)

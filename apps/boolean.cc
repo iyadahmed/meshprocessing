@@ -3,8 +3,7 @@
 #include <vector>
 #include <cmath>
 
-#include "stl_importer.hh"
-#include "vec3.hh"
+#include "stl_io.hh"
 
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/AABB_tree.h>
