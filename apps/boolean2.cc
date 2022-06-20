@@ -73,9 +73,10 @@ int main(int argc, char **argv)
         // for the edges and vertices of the two intersecting triangles
         // std::vector<Triangle_intersection> intersections;
         // tree_1.all_intersections(t, std::back_inserter(intersections));
+        // std::cout << "Number of intersections = " << intersections.size() << std::endl;
         // for (auto const &ti : intersections)
         // {
-        //     auto p = boost::get<Point3>(&(ti->first));
+        //     auto p = boost::get<Point>(&(ti->first));
         //     if (p)
         //     {
         //         std::cout << *p << std::endl;
