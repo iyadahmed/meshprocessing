@@ -8,7 +8,7 @@
 
 int main(int argc, char **argv)
 {
-    if (argc < 2)
+    if (argc != 2)
     {
         puts("Usage: test_stl path_to_stl.stl");
         return 1;
