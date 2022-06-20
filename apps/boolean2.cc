@@ -66,12 +66,25 @@ int main(int argc, char **argv)
 
     for (auto const &t : tri_soup_2)
     {
-        std::vector<Triangle_intersection> intersections;
+        // NOTE: It would have been great if we could use #all_intersections
+        // but sadly it misses some points,
+        // so implement our own naiive tri-tri intersection using #CGAL::intersection
+        // with edge-edge, edge-tri, vertex-tri, etc...
+        // for the edges and vertices of the two intersecting triangles
+        // std::vector<Triangle_intersection> intersections;
+        // tree_1.all_intersections(t, std::back_inserter(intersections));
+        // for (auto const &ti : intersections)
+        // {
+        //     auto p = boost::get<Point3>(&(ti->first));
+        //     if (p)
+        //     {
+        //         std::cout << *p << std::endl;
+        //     }
+        // }
+
         std::vector<Primitive_id> primitives;
         tree_1.all_intersected_primitives(t, std::back_inserter(primitives));
-        // tree_1.all_intersections(t, std::back_inserter(intersections));
-        std::cout << "Number of intersections = " << primitives.size() << std::endl;
-
+        std::cout << "Number of intersected triangles = " << primitives.size() << std::endl;
         for (auto const &other_t_id : primitives)
         {
             Segment t1_s1(t.vertex(0), t.vertex(1));
@@ -95,14 +108,5 @@ int main(int argc, char **argv)
                 }
             }
         }
-
-        // for (auto const &ti : intersections)
-        // {
-        //     auto p = boost::get<Point3>(&(ti->first));
-        //     if (p)
-        //     {
-        //         std::cout << *p << std::endl;
-        //     }
-        // }
     }
 }
