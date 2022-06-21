@@ -64,48 +64,31 @@ int main(int argc, char **argv)
 
     auto tri_soup_2 = load_stl(argv[2]);
 
-    for (auto const &t : tri_soup_2)
+    for (auto const &tri : tri_soup_2)
     {
-        // NOTE: It would have been great if we could use #all_intersections
-        // but sadly it misses some points,
-        // so implement our own naiive tri-tri intersection using #CGAL::intersection
-        // with edge-edge, edge-tri, vertex-tri, etc...
-        // for the edges and vertices of the two intersecting triangles
-        // std::vector<Triangle_intersection> intersections;
-        // tree_1.all_intersections(t, std::back_inserter(intersections));
-        // std::cout << "Number of intersections = " << intersections.size() << std::endl;
-        // for (auto const &ti : intersections)
-        // {
-        //     auto p = boost::get<Point>(&(ti->first));
-        //     if (p)
-        //     {
-        //         std::cout << *p << std::endl;
-        //     }
-        // }
-
-        std::vector<Primitive_id> primitives;
-        tree_1.all_intersected_primitives(t, std::back_inserter(primitives));
-        std::cout << "Number of intersected triangles = " << primitives.size() << std::endl;
-        for (auto const &other_t_id : primitives)
+        std::vector<Triangle_intersection> intersections;
+        tree_1.all_intersections(tri, std::back_inserter(intersections));
+        std::cout << "Number of intersections = " << intersections.size() << std::endl;
+        for (auto const &ti : intersections)
         {
-            Segment t1_s1(t.vertex(0), t.vertex(1));
-            Segment t1_s2(t.vertex(1), t.vertex(2));
-            Segment t1_s3(t.vertex(2), t.vertex(0));
-
-            Segment tri_segments[] = {t1_s1, t1_s2, t1_s3};
-
-            for (int i = 0; i < 3; i++)
+            if (auto p = boost::get<Point>(&(ti->first)))
             {
-                auto s = tri_segments[i];
-                auto intersection_result = CGAL::intersection(s, *other_t_id);
-
-                if (auto p = boost::get<Point>(&*intersection_result))
+                std::cout << "Intersected Point: " << *p << std::endl;
+            }
+            else if (auto s = boost::get<Segment>(&(ti->first)))
+            {
+                std::cout << "Intersected Segment: " << *s << std::endl;
+            }
+            else if (auto t = boost::get<Triangle>(&(ti->first)))
+            {
+                std::cout << "Intersected Triangle: " << *t << std::endl;
+            }
+            else if (auto points = boost::get<std::vector<Point>>(&(ti->first)))
+            {
+                std::cout << "Intersected Polygon: " << std::endl;
+                for (auto const &p : *points)
                 {
-                    std::cout << "Intersected Point: " << *p << std::endl;
-                }
-                else if (auto s = boost::get<Segment>(&*intersection_result))
-                {
-                    std::cout << "Intersected Segment: " << *s << std::endl;
+                    std::cout << p << std::endl;
                 }
             }
         }
