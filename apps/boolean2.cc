@@ -18,6 +18,7 @@ typedef CGAL::Simple_cartesian<double> TreeK;
 typedef TreeK::Point_3 Point;
 typedef TreeK::Triangle_3 Triangle;
 typedef TreeK::Segment_3 Segment;
+typedef TreeK::Vector_3 Vector;
 
 typedef std::vector<Triangle>::iterator Iterator;
 typedef CGAL::AABB_triangle_primitive<TreeK, Iterator> Primitive;
@@ -49,6 +50,66 @@ static std::vector<Triangle> load_stl(const char *filepath)
     return out;
 }
 
+static std::vector<TriPoint> triangulation_input_from_intersection(const Tree &tree, const Triangle &triangle)
+{
+    std::vector<TriPoint> triangulation_input;
+    std::vector<Triangle_intersection> intersections;
+
+    tree.all_intersections(triangle, std::back_inserter(intersections));
+
+    const Point verts[] = {triangle.vertex(0), triangle.vertex(1), triangle.vertex(2)};
+    auto basis_v1 = verts[1] - verts[0];
+    auto basis_v2 = verts[2] - verts[0];
+
+    // Include original triangle points in triangulation
+    for (int i = 0; i < 3; i++)
+    {
+        auto x = CGAL::scalar_product(verts[i] - CGAL::ORIGIN, basis_v1);
+        auto y = CGAL::scalar_product(verts[i] - CGAL::ORIGIN, basis_v2);
+        triangulation_input.push_back({x, y});
+    }
+
+    // Include intersection result
+    for (auto const &ti : intersections)
+    {
+        if (auto intersection_point = boost::get<Point>(&(ti->first)))
+        {
+            auto x = CGAL::scalar_product((*intersection_point) - CGAL::ORIGIN, basis_v1);
+            auto y = CGAL::scalar_product((*intersection_point) - CGAL::ORIGIN, basis_v2);
+            triangulation_input.push_back({x, y});
+        }
+        else if (auto intersection_segment = boost::get<Segment>(&(ti->first)))
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                auto x = CGAL::scalar_product(intersection_segment->vertex(i) - CGAL::ORIGIN, basis_v1);
+                auto y = CGAL::scalar_product(intersection_segment->vertex(i) - CGAL::ORIGIN, basis_v2);
+                triangulation_input.push_back({x, y});
+            }
+        }
+        else if (auto intersection_triangle = boost::get<Triangle>(&(ti->first)))
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                auto x = CGAL::scalar_product(intersection_triangle->vertex(i) - CGAL::ORIGIN, basis_v1);
+                auto y = CGAL::scalar_product(intersection_triangle->vertex(i) - CGAL::ORIGIN, basis_v2);
+                triangulation_input.push_back({x, y});
+            }
+        }
+        else if (auto intersection_polygon = boost::get<std::vector<Point>>(&(ti->first)))
+        {
+            for (auto const &p : *intersection_polygon)
+            {
+                auto x = CGAL::scalar_product(p - CGAL::ORIGIN, basis_v1);
+                auto y = CGAL::scalar_product(p - CGAL::ORIGIN, basis_v2);
+                triangulation_input.push_back({x, y});
+            }
+        }
+    }
+
+    return triangulation_input;
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 3)
@@ -66,31 +127,13 @@ int main(int argc, char **argv)
 
     for (auto const &tri : tri_soup_2)
     {
-        std::vector<Triangle_intersection> intersections;
-        tree_1.all_intersections(tri, std::back_inserter(intersections));
-        std::cout << "Number of intersections = " << intersections.size() << std::endl;
-        for (auto const &ti : intersections)
+        auto triangulation_input = triangulation_input_from_intersection(tree_1, tri);
+        std::cout << "Triangulation input points: \n";
+        for (auto const &p : triangulation_input)
         {
-            if (auto p = boost::get<Point>(&(ti->first)))
-            {
-                std::cout << "Intersected Point: " << *p << std::endl;
-            }
-            else if (auto s = boost::get<Segment>(&(ti->first)))
-            {
-                std::cout << "Intersected Segment: " << *s << std::endl;
-            }
-            else if (auto t = boost::get<Triangle>(&(ti->first)))
-            {
-                std::cout << "Intersected Triangle: " << *t << std::endl;
-            }
-            else if (auto points = boost::get<std::vector<Point>>(&(ti->first)))
-            {
-                std::cout << "Intersected Polygon: " << std::endl;
-                for (auto const &p : *points)
-                {
-                    std::cout << p << std::endl;
-                }
-            }
+            std::cout << p << "\n";
         }
     }
+
+    return 0;
 }
