@@ -128,10 +128,15 @@ int main(int argc, char **argv)
     for (auto const &tri : tri_soup_2)
     {
         auto triangulation_input = triangulation_input_from_intersection(tree_1, tri);
-        std::cout << "Triangulation input points: \n";
-        for (auto const &p : triangulation_input)
+        Triangulation triangulation(triangulation_input.begin(), triangulation_input.end());
+        std::cout << "Triangulation output: " << std::endl;
+        for (auto it = triangulation.finite_faces_begin(); it != triangulation.finite_faces_end(); it++)
         {
-            std::cout << p << "\n";
+            std::cout << "Triangle: " << std::endl;
+            for (int i = 0; i < 3; i++)
+            {
+                std::cout << triangulation.triangle(it).vertex(i) << std::endl;
+            }
         }
     }
 
