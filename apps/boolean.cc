@@ -12,6 +12,7 @@
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel_with_kth_root.h>
 #include <CGAL/Triangulation_2.h>
+#include <CGAL/Triangulation_vertex_base_with_info_2.h>
 
 typedef CGAL::Simple_cartesian<double> TreeK;
 
@@ -29,7 +30,10 @@ typedef Tree::Primitive_id Primitive_id;
 typedef boost::optional<Tree::Intersection_and_primitive_id<Triangle>::Type> Triangle_intersection;
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel TriK;
-typedef CGAL::Triangulation_2<TriK> Triangulation;
+typedef CGAL::Triangulation_vertex_base_with_info_2<Point, TriK> Vb;
+typedef CGAL::Triangulation_data_structure_2<Vb> Tds;
+
+typedef CGAL::Triangulation_2<TriK, Tds> Triangulation;
 typedef Triangulation::Point TriPoint;
 
 static std::vector<Triangle> load_stl(const char *filepath)
@@ -50,9 +54,10 @@ static std::vector<Triangle> load_stl(const char *filepath)
     return out;
 }
 
-static std::vector<TriPoint> triangulation_input_from_intersection(const Tree &tree, const Triangle &triangle)
+// Computes new triangles from intersection points of a triangle with a Tree
+static std::vector<Point> triangulation_from_intersection(const Tree &tree, const Triangle &triangle)
 {
-    std::vector<TriPoint> triangulation_input;
+    std::vector<std::pair<TriPoint, Point>> triangulation_input;
     std::vector<Triangle_intersection> intersections;
 
     tree.all_intersections(triangle, std::back_inserter(intersections));
@@ -64,9 +69,10 @@ static std::vector<TriPoint> triangulation_input_from_intersection(const Tree &t
     // Include original triangle points in triangulation
     for (int i = 0; i < 3; i++)
     {
-        auto x = CGAL::scalar_product(verts[i] - CGAL::ORIGIN, basis_v1);
-        auto y = CGAL::scalar_product(verts[i] - CGAL::ORIGIN, basis_v2);
-        triangulation_input.push_back({x, y});
+        auto v = verts[i];
+        auto x = CGAL::scalar_product(v - CGAL::ORIGIN, basis_v1);
+        auto y = CGAL::scalar_product(v - CGAL::ORIGIN, basis_v2);
+        triangulation_input.push_back(std::make_pair(TriPoint(x, y), v));
     }
 
     // Include intersection result
@@ -74,40 +80,52 @@ static std::vector<TriPoint> triangulation_input_from_intersection(const Tree &t
     {
         if (auto intersection_point = boost::get<Point>(&(ti->first)))
         {
-            auto x = CGAL::scalar_product((*intersection_point) - CGAL::ORIGIN, basis_v1);
-            auto y = CGAL::scalar_product((*intersection_point) - CGAL::ORIGIN, basis_v2);
-            triangulation_input.push_back({x, y});
+            auto v = *intersection_point;
+            auto x = CGAL::scalar_product(v - CGAL::ORIGIN, basis_v1);
+            auto y = CGAL::scalar_product(v - CGAL::ORIGIN, basis_v2);
+            triangulation_input.push_back(std::make_pair(TriPoint(x, y), v));
         }
         else if (auto intersection_segment = boost::get<Segment>(&(ti->first)))
         {
             for (int i = 0; i < 2; i++)
             {
-                auto x = CGAL::scalar_product(intersection_segment->vertex(i) - CGAL::ORIGIN, basis_v1);
-                auto y = CGAL::scalar_product(intersection_segment->vertex(i) - CGAL::ORIGIN, basis_v2);
-                triangulation_input.push_back({x, y});
+                auto v = intersection_segment->vertex(i);
+                auto x = CGAL::scalar_product(v - CGAL::ORIGIN, basis_v1);
+                auto y = CGAL::scalar_product(v - CGAL::ORIGIN, basis_v2);
+                triangulation_input.push_back(std::make_pair(TriPoint(x, y), v));
             }
         }
         else if (auto intersection_triangle = boost::get<Triangle>(&(ti->first)))
         {
             for (int i = 0; i < 3; i++)
             {
-                auto x = CGAL::scalar_product(intersection_triangle->vertex(i) - CGAL::ORIGIN, basis_v1);
-                auto y = CGAL::scalar_product(intersection_triangle->vertex(i) - CGAL::ORIGIN, basis_v2);
-                triangulation_input.push_back({x, y});
+                auto v = intersection_triangle->vertex(i);
+                auto x = CGAL::scalar_product(v - CGAL::ORIGIN, basis_v1);
+                auto y = CGAL::scalar_product(v - CGAL::ORIGIN, basis_v2);
+                triangulation_input.push_back(std::make_pair(TriPoint(x, y), v));
             }
         }
         else if (auto intersection_polygon = boost::get<std::vector<Point>>(&(ti->first)))
         {
-            for (auto const &p : *intersection_polygon)
+            for (auto const &v : *intersection_polygon)
             {
-                auto x = CGAL::scalar_product(p - CGAL::ORIGIN, basis_v1);
-                auto y = CGAL::scalar_product(p - CGAL::ORIGIN, basis_v2);
-                triangulation_input.push_back({x, y});
+                auto x = CGAL::scalar_product(v - CGAL::ORIGIN, basis_v1);
+                auto y = CGAL::scalar_product(v - CGAL::ORIGIN, basis_v2);
+                triangulation_input.push_back(std::make_pair(TriPoint(x, y), v));
             }
         }
     }
 
-    return triangulation_input;
+    Triangulation triangulation(triangulation_input.begin(), triangulation_input.end());
+    std::vector<Point> output;
+    for (auto it = triangulation.finite_faces_begin(); it != triangulation.finite_faces_end(); it++)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            output.push_back(it->vertex(i)->info());
+        }
+    }
+    return output;
 }
 
 int main(int argc, char **argv)
@@ -127,16 +145,11 @@ int main(int argc, char **argv)
 
     for (auto const &tri : tri_soup_2)
     {
-        auto triangulation_input = triangulation_input_from_intersection(tree_1, tri);
-        Triangulation triangulation(triangulation_input.begin(), triangulation_input.end());
-        std::cout << "Triangulation output: " << std::endl;
-        for (auto it = triangulation.finite_faces_begin(); it != triangulation.finite_faces_end(); it++)
+        auto tessellation = triangulation_from_intersection(tree_1, tri);
+        std::cout << "Tessellation: " << std::endl;
+        for (auto const &p : tessellation)
         {
-            std::cout << "Triangle: " << std::endl;
-            for (int i = 0; i < 3; i++)
-            {
-                std::cout << triangulation.triangle(it).vertex(i) << std::endl;
-            }
+            std::cout << p << std::endl;
         }
     }
 
