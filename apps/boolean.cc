@@ -55,7 +55,7 @@ static std::vector<Triangle> load_stl(const char *filepath)
 }
 
 // Computes new triangles from intersection points of a triangle with a Tree
-static std::vector<Point> triangulation_from_intersection(const Tree &tree, const Triangle &triangle)
+static Triangulation triangulation_from_intersection(const Tree &tree, const Triangle &triangle)
 {
     std::vector<std::pair<TriPoint, Point>> triangulation_input;
     std::vector<Triangle_intersection> intersections;
@@ -116,16 +116,7 @@ static std::vector<Point> triangulation_from_intersection(const Tree &tree, cons
         }
     }
 
-    Triangulation triangulation(triangulation_input.begin(), triangulation_input.end());
-    std::vector<Point> output;
-    for (auto it = triangulation.finite_faces_begin(); it != triangulation.finite_faces_end(); it++)
-    {
-        for (int i = 0; i < 3; i++)
-        {
-            output.push_back(it->vertex(i)->info());
-        }
-    }
-    return output;
+    return Triangulation(triangulation_input.begin(), triangulation_input.end());
 }
 
 int main(int argc, char **argv)
@@ -143,15 +134,27 @@ int main(int argc, char **argv)
 
     auto tri_soup_2 = load_stl(argv[2]);
 
+    std::vector<mp::io::stl::Triangle> out;
+    mp::io::stl::Triangle tri_buf;
+
     for (auto const &tri : tri_soup_2)
     {
-        auto tessellation = triangulation_from_intersection(tree_1, tri);
-        std::cout << "Tessellation: " << std::endl;
-        for (auto const &p : tessellation)
+        auto triangulation = triangulation_from_intersection(tree_1, tri);
+
+        for (auto it = triangulation.finite_faces_begin(); it != triangulation.finite_faces_end(); it++)
         {
-            std::cout << p << std::endl;
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    tri_buf.verts[i][j] = it->vertex(i)->info()[j];
+                }
+            }
+            out.push_back(tri_buf);
         }
     }
+
+    mp::io::stl::write_stl(out, "out.stl");
 
     return 0;
 }
