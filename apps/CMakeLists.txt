@@ -7,6 +7,7 @@ add_executable(boolean boolean.cc)
 target_compile_features(boolean PRIVATE cxx_std_17)
 target_link_libraries(boolean PRIVATE stl CGAL::CGAL)
 
+find_package(TBB REQUIRED)
 add_executable(winding_numbers winding_numbers.cc)
 target_compile_features(winding_numbers PRIVATE cxx_std_17)
-target_link_libraries(winding_numbers PRIVATE stl vec3)
+target_link_libraries(winding_numbers PRIVATE stl vec3 TBB::tbb)

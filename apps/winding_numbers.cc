@@ -3,6 +3,8 @@
 #include <iostream>
 #include <cmath>
 #include <fstream>
+#include <numeric>
+#include <execution>
 
 #include "stl_io.hh"
 #include "vec3.hh"
@@ -35,16 +37,34 @@ static double calc_winding_number(const Vec3 &query_point, const std::vector<Tri
     return w;
 }
 
+static double calc_winding_number_parallelized(const Vec3 &query_point, const std::vector<Triangle> &tris)
+{
+    auto map_func = [&](const Triangle &t)
+    {
+        return tet_solid_angle(query_point, t.v1, t.v2, t.v3);
+    };
+
+    return std::transform_reduce(std::execution::par, tris.cbegin(), tris.cend(), 0.0f,
+                                 std::plus{},
+                                 map_func);
+}
+
 static bool is_inside(const Vec3 &query_point, const std::vector<Triangle> &tris)
 {
     return calc_winding_number(query_point, tris) >= (2.0 * M_PI);
 }
 
+static bool is_inside_parallelized(const Vec3 &query_point, const std::vector<Triangle> &tris)
+{
+    return calc_winding_number_parallelized(query_point, tris) >= (2.0 * M_PI);
+}
+
 int main(int argc, char **argv)
 {
-    if (argc != 4)
+    if (argc != 5)
     {
-        puts("Usage: winding_numbers input_filepath.stl grid_step output_filepath.pts\n"
+        puts("Usage: winding_numbers input_filepath.stl grid_step output_filepath.pts parallelize=Y/N\n"
+             "Example: winding_numbers bunny.stl 5.0 bunny_points.pts Y\n"
              "Generates points inside the volume of an oriented triangle soup by filtering bounding box grid points.\n"
              "Outputs a binary file containing N * 3 floats.");
         return 1;
@@ -58,6 +78,7 @@ int main(int argc, char **argv)
         return 1;
     }
     char *output_filepath = argv[3];
+    bool do_parallelize = argv[4][0] == 'Y';
 
     // Load mesh
     std::vector<Triangle> mesh;
@@ -78,6 +99,13 @@ int main(int argc, char **argv)
 
     std::ofstream file(output_filepath, std::ios::binary);
 
+    auto is_inside_func = is_inside;
+    if (do_parallelize)
+    {
+        is_inside_func = is_inside_parallelized;
+    }
+
+    // TODO: parallelize grid generation and evaluation
     Vec3 query_point = bb_min;
     Vec3 bb_dims = bb_max - bb_min;
     int num_x = static_cast<int>(bb_dims.x / grid_step);
@@ -89,7 +117,7 @@ int main(int argc, char **argv)
         {
             for (int k = 0; k < num_z; k++)
             {
-                if (is_inside(query_point, mesh))
+                if (is_inside_func(query_point, mesh))
                 {
                     file.write(reinterpret_cast<char *>(&query_point), sizeof(Vec3));
                 }
