@@ -52,6 +52,11 @@ int main(int argc, char **argv)
 
     char *input_filepath = argv[1];
     float grid_step = atof(argv[2]);
+    if (grid_step <= 0.0f)
+    {
+        puts("ERROR: Grid step must be a positive number.");
+        return 1;
+    }
     char *output_filepath = argv[3];
 
     // Load mesh
