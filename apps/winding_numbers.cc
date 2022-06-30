@@ -42,15 +42,21 @@ static bool is_inside(const Vec3 &query_point, const std::vector<Triangle> &tris
 
 int main(int argc, char **argv)
 {
-    if (argc != 2)
+    if (argc != 4)
     {
-        puts("Usage: boolean input.stl");
+        puts("Usage: winding_numbers input_filepath.stl grid_step output_filepath.pts\n"
+             "Generates points inside the volume of an oriented triangle soup by filtering bounding box grid points.\n"
+             "Outputs a binary file containing N * 3 floats.");
         return 1;
     }
 
+    char *input_filepath = argv[1];
+    float grid_step = atof(argv[2]);
+    char *output_filepath = argv[3];
+
     // Load mesh
     std::vector<Triangle> mesh;
-    read_stl(argv[1], mesh);
+    read_stl(input_filepath, mesh);
 
     // Calculate bounding box
     Vec3 bb_min(INFINITY, INFINITY, INFINITY);
@@ -65,14 +71,13 @@ int main(int argc, char **argv)
         }
     }
 
-    std::ofstream file("filtered_points.pts", std::ios::binary);
+    std::ofstream file(output_filepath, std::ios::binary);
 
     Vec3 query_point = bb_min;
     Vec3 bb_dims = bb_max - bb_min;
-    float voxel_size = 5.0f;
-    int num_x = static_cast<int>(bb_dims.x / voxel_size);
-    int num_y = static_cast<int>(bb_dims.y / voxel_size);
-    int num_z = static_cast<int>(bb_dims.z / voxel_size);
+    int num_x = static_cast<int>(bb_dims.x / grid_step);
+    int num_y = static_cast<int>(bb_dims.y / grid_step);
+    int num_z = static_cast<int>(bb_dims.z / grid_step);
     for (int i = 0; i < num_x; i++)
     {
         for (int j = 0; j < num_y; j++)
@@ -83,12 +88,12 @@ int main(int argc, char **argv)
                 {
                     file.write(reinterpret_cast<char *>(&query_point), sizeof(Vec3));
                 }
-                query_point.z += voxel_size;
+                query_point.z += grid_step;
             }
-            query_point.y += voxel_size;
+            query_point.y += grid_step;
             query_point.z = bb_min.z;
         }
-        query_point.x += voxel_size;
+        query_point.x += grid_step;
         query_point.y = bb_min.y;
         query_point.z = bb_min.z;
     }
