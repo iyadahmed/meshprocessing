@@ -105,29 +105,26 @@ int main(int argc, char **argv)
         is_inside_func = is_inside_parallelized;
     }
 
-    // TODO: parallelize grid generation and evaluation
-    Vec3 query_point = bb_min;
     Vec3 bb_dims = bb_max - bb_min;
     int num_x = static_cast<int>(bb_dims.x / grid_step);
     int num_y = static_cast<int>(bb_dims.y / grid_step);
     int num_z = static_cast<int>(bb_dims.z / grid_step);
+
+    int num_points = num_x * num_y * num_z;
+    printf("Number of grid points before filtering = %d\n", num_points);
+
     for (int i = 0; i < num_x; i++)
     {
         for (int j = 0; j < num_y; j++)
         {
             for (int k = 0; k < num_z; k++)
             {
+                Vec3 query_point(i * grid_step + bb_min.x, j * grid_step + bb_min.y, k * grid_step + bb_min.z);
                 if (is_inside_func(query_point, mesh))
                 {
                     file.write(reinterpret_cast<char *>(&query_point), sizeof(Vec3));
                 }
-                query_point.z += grid_step;
             }
-            query_point.y += grid_step;
-            query_point.z = bb_min.z;
         }
-        query_point.x += grid_step;
-        query_point.y = bb_min.y;
-        query_point.z = bb_min.z;
     }
 }
