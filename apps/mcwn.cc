@@ -242,6 +242,7 @@ int main(int argc, char **argv)
     int num_points = num_x * num_y * num_z;
     printf("Number of grid points before filtering = %d\n", num_points);
 
+#pragma omp parallel for collapse(3)
     for (int i = 0; i < num_x; i++)
     {
         for (int j = 0; j < num_y; j++)
@@ -251,9 +252,12 @@ int main(int argc, char **argv)
                 CGALPoint3 query_point(i * grid_step + bb_min.x, j * grid_step + bb_min.y, k * grid_step + bb_min.z);
                 if (is_inside(tree, query_point, 0.0f))
                 {
-                    file.write(reinterpret_cast<const char *>(&query_point.x()), sizeof(double));
-                    file.write(reinterpret_cast<const char *>(&query_point.y()), sizeof(double));
-                    file.write(reinterpret_cast<const char *>(&query_point.z()), sizeof(double));
+#pragma omp critical
+                    {
+                        file.write(reinterpret_cast<const char *>(&query_point.x()), sizeof(double));
+                        file.write(reinterpret_cast<const char *>(&query_point.y()), sizeof(double));
+                        file.write(reinterpret_cast<const char *>(&query_point.z()), sizeof(double));
+                    }
                 }
             }
         }
