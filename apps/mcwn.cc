@@ -194,24 +194,30 @@ static bool is_inside(const Tree &tree, const CGALPoint3 &query_point, float hol
 
 int main(int argc, char **argv)
 {
-    if (argc != 4)
+    if (argc != 5)
     {
         puts("Monte Carlo Winding Numbers\n"
-             "Usage: mcwn input_filepath.stl grid_step output_filepath.pts\n"
-             "Example: mcwn bunny.stl 5.0 bunny_points.pts\n"
+             "Usage: mcwn grid_step hole_tolerance input_filepath.stl output_filepath.pts\n"
+             "Example: mcwn bunny.stl 5.0 1.0 bunny_points.pts\n"
              "Generates points inside the volume of an oriented triangle soup by filtering bounding box grid points.\n"
              "Outputs a binary file containing N * 3 doubles.");
         return 1;
     }
 
-    char *input_filepath = argv[1];
-    float grid_step = atof(argv[2]);
+    float grid_step = atof(argv[1]);
     if (grid_step <= 0.0f)
     {
         puts("ERROR: Grid step must be a positive number.");
         return 1;
     }
-    char *output_filepath = argv[3];
+    float hole_tolerance = atof(argv[2]);
+    if (hole_tolerance > 1.0f || hole_tolerance < 0.0f)
+    {
+        puts("ERROR: Hole tolerance must be between 0.0 and 1.0 inclusive.");
+        return 1;
+    }
+    char *input_filepath = argv[3];
+    char *output_filepath = argv[4];
 
     std::cout << "CGAL Version: " << CGAL_VERSION_STR << std::endl;
 
@@ -250,7 +256,7 @@ int main(int argc, char **argv)
             for (int k = 0; k < num_z; k++)
             {
                 CGALPoint3 query_point(i * grid_step + bb_min.x, j * grid_step + bb_min.y, k * grid_step + bb_min.z);
-                if (is_inside(tree, query_point, 0.0f))
+                if (is_inside(tree, query_point, hole_tolerance))
                 {
 #pragma omp critical
                     {
