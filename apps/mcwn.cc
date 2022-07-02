@@ -238,6 +238,7 @@ int main(int argc, char **argv)
         }
     }
 
+    // Generate and filter grid points and write them to a file
     std::ofstream file(output_filepath, std::ios::binary);
 
     Vec3 bb_dims = bb_max - bb_min;
