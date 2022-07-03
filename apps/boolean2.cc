@@ -188,7 +188,7 @@ int main(int argc, char **argv)
             {
                 for (int j = 0; j < 3; j++)
                 {
-                    tri_buf.verts[i][j] = it->vertex(i)->info().point_3d[j].exact().convert_to<float>();
+                    tri_buf.verts[i][j] = CGAL::to_double(it->vertex(i)->info().point_3d[j]);
                 }
             }
             // TODO: Filter triangles based on winding number of one their points
