@@ -4,22 +4,21 @@
 
 #include "stl_io.hh"
 
-#include <CGAL/Simple_cartesian.h>
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
 #include <CGAL/AABB_triangle_primitive.h>
-#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
-#include <CGAL/Exact_predicates_exact_constructions_kernel_with_kth_root.h>
 #include <CGAL/Triangulation_2.h>
 #include <CGAL/Triangulation_vertex_base_with_info_2.h>
 
-typedef CGAL::Simple_cartesian<double> TreeK;
+// Use exact predicates and constructions to avoid precondition exception (degenerate edges being generated while intersecting triangles)
+// Also for better precision
+typedef CGAL::Exact_predicates_exact_constructions_kernel K;
 
-typedef TreeK::Point_3 Point;
-typedef TreeK::Triangle_3 Triangle;
-typedef TreeK::Segment_3 Segment;
-typedef TreeK::Vector_3 Vector;
+typedef K::Point_3 Point;
+typedef K::Triangle_3 Triangle;
+typedef K::Segment_3 Segment;
+typedef K::Vector_3 Vector;
 
 struct BooleanTriangle
 {
@@ -35,8 +34,8 @@ struct BooleanTrianglePrimitive
 {
 public:
     typedef const BooleanTriangle *Id;
-    typedef TreeK::Point_3 Point;
-    typedef TreeK::Triangle_3 Datum;
+    typedef K::Point_3 Point;
+    typedef K::Triangle_3 Datum;
 
 private:
     Id m_pt;
@@ -67,19 +66,18 @@ struct TriangulationPointInfo
 
 // typedef std::vector<Triangle>::iterator Iterator;
 
-// typedef CGAL::AABB_triangle_primitive<TreeK, Iterator> Primitive;
+// typedef CGAL::AABB_triangle_primitive<K, Iterator> Primitive;
 
-typedef CGAL::AABB_traits<TreeK, BooleanTrianglePrimitive> AABB_triangle_traits;
+typedef CGAL::AABB_traits<K, BooleanTrianglePrimitive> AABB_triangle_traits;
 typedef CGAL::AABB_tree<AABB_triangle_traits> Tree;
 typedef Tree::Primitive_id Primitive_id;
 
 typedef boost::optional<Tree::Intersection_and_primitive_id<Triangle>::Type> Triangle_intersection;
 
-typedef CGAL::Exact_predicates_inexact_constructions_kernel TriK;
-typedef CGAL::Triangulation_vertex_base_with_info_2<TriangulationPointInfo, TriK> Vb;
+typedef CGAL::Triangulation_vertex_base_with_info_2<TriangulationPointInfo, K> Vb;
 typedef CGAL::Triangulation_data_structure_2<Vb> Tds;
 
-typedef CGAL::Triangulation_2<TriK, Tds> Triangulation;
+typedef CGAL::Triangulation_2<K, Tds> Triangulation;
 typedef Triangulation::Point TriPoint;
 
 static std::vector<mp::io::stl::Triangle> load_stl(const char *filepath)
@@ -199,7 +197,7 @@ int main(int argc, char **argv)
             {
                 for (int j = 0; j < 3; j++)
                 {
-                    tri_buf.verts[i][j] = it->vertex(i)->info().point_3d[j];
+                    tri_buf.verts[i][j] = it->vertex(i)->info().point_3d[j].exact().convert_to<float>();
                 }
             }
             // TODO: Filter triangles based on winding number of one their points
