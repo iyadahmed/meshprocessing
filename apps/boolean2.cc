@@ -6,13 +6,12 @@
 
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
-#include <CGAL/AABB_triangle_primitive.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Triangulation_2.h>
 #include <CGAL/Triangulation_vertex_base_with_info_2.h>
 
 // Use exact predicates and constructions to avoid precondition exception (degenerate edges being generated while intersecting triangles)
-// Also for better precision
+// Also for better precision and handling coplanar cases
 typedef CGAL::Exact_predicates_exact_constructions_kernel K;
 
 typedef K::Point_3 Point;
@@ -28,7 +27,7 @@ struct BooleanTriangle
     int mesh_index;
 };
 
-typedef std::vector<BooleanTriangle>::const_iterator Iterator;
+typedef std::vector<BooleanTriangle>::const_iterator BooleanTriangle_iterator;
 
 struct BooleanTrianglePrimitive
 {
@@ -42,10 +41,9 @@ private:
 
 public:
     BooleanTrianglePrimitive() {}
-    BooleanTrianglePrimitive(Iterator it)
-        : m_pt(&(*it)) {}
-    const Id &id() const { return m_pt; }
+    BooleanTrianglePrimitive(BooleanTriangle_iterator it) : m_pt(&(*it)) {}
 
+    const Id &id() const { return m_pt; }
     Datum datum() const
     {
         return Datum(m_pt->a,
@@ -58,25 +56,18 @@ public:
     }
 };
 
+typedef CGAL::AABB_traits<K, BooleanTrianglePrimitive> AABB_triangle_traits;
+typedef CGAL::AABB_tree<AABB_triangle_traits> Tree;
+typedef boost::optional<Tree::Intersection_and_primitive_id<Triangle>::Type> Triangle_intersection;
+
 struct TriangulationPointInfo
 {
     Point point_3d;
     int mesh_index;
 };
 
-// typedef std::vector<Triangle>::iterator Iterator;
-
-// typedef CGAL::AABB_triangle_primitive<K, Iterator> Primitive;
-
-typedef CGAL::AABB_traits<K, BooleanTrianglePrimitive> AABB_triangle_traits;
-typedef CGAL::AABB_tree<AABB_triangle_traits> Tree;
-typedef Tree::Primitive_id Primitive_id;
-
-typedef boost::optional<Tree::Intersection_and_primitive_id<Triangle>::Type> Triangle_intersection;
-
 typedef CGAL::Triangulation_vertex_base_with_info_2<TriangulationPointInfo, K> Vb;
 typedef CGAL::Triangulation_data_structure_2<Vb> Tds;
-
 typedef CGAL::Triangulation_2<K, Tds> Triangulation;
 typedef Triangulation::Point TriPoint;
 
