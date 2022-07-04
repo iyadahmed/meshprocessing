@@ -12,6 +12,16 @@ Vec3::Vec3(const float buf[3])
     z = buf[2];
 }
 
+Vec3::Vec3(float value)
+{
+    x = y = z = value;
+}
+
+Vec3::Vec3()
+{
+    x = y = z = 0.0f;
+}
+
 // https://stackoverflow.com/a/66663070/8094047
 std::ostream &operator<<(std::ostream &os, Vec3 const &v)
 {
@@ -84,11 +94,9 @@ Vec3 Vec3::operator-(const Vec3 &other) const
 
 Vec3 Vec3::operator-() const { return Vec3(-x, -y, -z); }
 
-Vec3 Vec3::operator*(float t)
+Vec3 Vec3::operator*(float t) const
 {
-    Vec3 out;
-    out *= t;
-    return out;
+    return Vec3(x * t, y * t, z * t);
 }
 
 Vec3 &Vec3::operator+=(const Vec3 &other)
