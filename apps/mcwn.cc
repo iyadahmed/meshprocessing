@@ -1,11 +1,7 @@
-#include <cstdio>
 #include <vector>
 #include <iostream>
 #include <cmath>
 #include <fstream>
-#include <numeric>
-#include <execution>
-#include <algorithm>
 
 #include "stl_io.hh"
 #include "vec3.hh"

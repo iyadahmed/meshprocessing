@@ -19,9 +19,7 @@ target_link_libraries(winding_numbers PRIVATE stl vec3 TBB::tbb)
 find_package(OpenMP REQUIRED)
 add_executable(mcwn mcwn.cc)
 target_compile_features(mcwn PRIVATE cxx_std_17)
-
-# Somehow I need to link with TBB?, or else debug builds don't work (undefined reference to a TBB function)
-target_link_libraries(mcwn PRIVATE stl vec3 CGAL::CGAL OpenMP::OpenMP_CXX TBB::tbb)
+target_link_libraries(mcwn PRIVATE stl vec3 CGAL::CGAL OpenMP::OpenMP_CXX)
 
 add_executable(bvh bvh.cc)
 target_compile_features(bvh PRIVATE cxx_std_17)
