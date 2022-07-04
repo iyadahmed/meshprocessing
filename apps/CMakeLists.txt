@@ -22,3 +22,7 @@ target_compile_features(mcwn PRIVATE cxx_std_17)
 
 # Somehow I need to link with TBB?, or else debug builds don't work (undefined reference to a TBB function)
 target_link_libraries(mcwn PRIVATE stl vec3 CGAL::CGAL OpenMP::OpenMP_CXX TBB::tbb)
+
+add_executable(bvh bvh.cc)
+target_compile_features(bvh PRIVATE cxx_std_17)
+target_link_libraries(bvh PRIVATE stl vec3)
