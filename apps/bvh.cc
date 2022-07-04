@@ -5,34 +5,7 @@
 #include "stl_io.hh"
 #include "vec3.hh"
 
-class float3
-{
-public:
-    float x, y, z;
-    float3()
-    {
-        x = y = z = 0.0;
-    }
-    float3(float v)
-    {
-        x = y = z = v;
-    }
-    float3(float x, float y, float z) : x(x), y(y), z(z)
-    {
-    }
-    float3 operator-(const float3 &other) const
-    {
-        return float3{x - other.x, y - other.y, z - other.z};
-    }
-    float3 operator+(const float3 &other) const
-    {
-        return float3{x + other.x, y + other.y, z + other.z};
-    }
-    float3 operator*(float scale) const
-    {
-        return float3{x * scale, y * scale, z * scale};
-    }
-};
+typedef Vec3 float3;
 
 struct Tri
 {
@@ -120,22 +93,25 @@ void IntersectTri(Ray &ray, const Tri &tri)
 
 int main(int argc, char **argv)
 {
-    // if (argc != 2)
-    // {
-    //     puts("Usage: bvh input.stl");
-    //     return 1;
-    // }
-
-    Tri tri[N];
-    for (int i = 0; i < N; i++)
+    if (argc != 2)
     {
-        float3 r0{RandomFloat(), RandomFloat(), RandomFloat()};
-        float3 r1{RandomFloat(), RandomFloat(), RandomFloat()};
-        float3 r2{RandomFloat(), RandomFloat(), RandomFloat()};
-        tri[i].vertex0 = r0 * 9 - float3(5);
-        tri[i].vertex1 = tri[i].vertex0 + r1;
-        tri[i].vertex2 = tri[i].vertex0 + r2;
+        puts("Usage: bvh input.stl");
+        return 1;
     }
+
+    std::vector<stl::Triangle> tri_soup;
+    stl::read_stl(argv[1], tri_soup);
+
+    // Tri tri[N];
+    // for (int i = 0; i < N; i++)
+    // {
+    //     float3 r0{RandomFloat(), RandomFloat(), RandomFloat()};
+    //     float3 r1{RandomFloat(), RandomFloat(), RandomFloat()};
+    //     float3 r2{RandomFloat(), RandomFloat(), RandomFloat()};
+    //     tri[i].vertex0 = r0 * 9 - float3(5);
+    //     tri[i].vertex1 = tri[i].vertex0 + r1;
+    //     tri[i].vertex2 = tri[i].vertex0 + r2;
+    // }
 
     const int width = 640;
     const int height = 640;
@@ -154,9 +130,9 @@ int main(int argc, char **argv)
             ray.D = normalized(pixelPos - ray.O);
             ray.t = 1e30f;
 
-            for (const auto &t : tri)
+            for (const auto &t : tri_soup)
             {
-                IntersectTri(ray, t);
+                IntersectTri(ray, Tri{t.v1, t.v2, t.v3});
             }
 
             if (ray.t != 1e30f)
