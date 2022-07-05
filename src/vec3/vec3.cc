@@ -136,3 +136,8 @@ float &Vec3::operator[](size_t index)
 
     throw std::out_of_range("Index out of range");
 }
+
+float Vec3::operator[](size_t index) const
+{
+    return (*this)[index];
+}

@@ -24,6 +24,11 @@ add_library(vec3 vec3/vec3.cc vec3/vec3.hh)
 target_include_directories(vec3 PUBLIC vec3)
 target_compile_features(vec3 PUBLIC cxx_std_11)
 
+add_library(bvh bvh/bvh.cc bvh/bvh.hh)
+target_include_directories(bvh PUBLIC bvh)
+target_link_libraries(bvh PRIVATE vec3)
+target_compile_features(bvh PUBLIC cxx_std_11)
+
 find_library(MATH_LIBRARY m)
 
 if(MATH_LIBRARY)

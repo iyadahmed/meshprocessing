@@ -32,6 +32,7 @@ public:
     Vec3 &operator/=(float t);
     Vec3 operator/(float t) const;
     float &operator[](size_t index);
+    float operator[](size_t index) const;
 };
 
 typedef Vec3 Point3;
