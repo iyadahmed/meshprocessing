@@ -23,4 +23,4 @@ target_link_libraries(mcwn PRIVATE stl vec3 CGAL::CGAL OpenMP::OpenMP_CXX)
 
 add_executable(bvhapp bvh.cc)
 target_compile_features(bvhapp PRIVATE cxx_std_17)
-target_link_libraries(bvhapp PRIVATE stl vec3)
+target_link_libraries(bvhapp PRIVATE stl vec3 bvh)

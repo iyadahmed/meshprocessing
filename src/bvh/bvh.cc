@@ -1,6 +1,6 @@
 #include "bvh.hh"
 
-static void intersect_tri(BVHRay &ray, const BVHTriangle &tri)
+static void intersect_ray_tri(BVHRay &ray, const BVHTriangle &tri)
 {
     const Vec3 edge1 = tri.vertex1 - tri.vertex0;
     const Vec3 edge2 = tri.vertex2 - tri.vertex0;
@@ -20,6 +20,17 @@ static void intersect_tri(BVHRay &ray, const BVHTriangle &tri)
     const float t = f * edge2.dot(q);
     if (t > 0.0001f)
         ray.t = std::min(ray.t, t);
+}
+
+static bool intersect_ray_aabb(const BVHRay &ray, const Vec3 &bmin, const Vec3 &bmax)
+{
+    float tx1 = (bmin.x - ray.origin.x) / ray.direction.x, tx2 = (bmax.x - ray.origin.x) / ray.direction.x;
+    float tmin = std::min(tx1, tx2), tmax = std::max(tx1, tx2);
+    float ty1 = (bmin.y - ray.origin.y) / ray.direction.y, ty2 = (bmax.y - ray.origin.y) / ray.direction.y;
+    tmin = std::max(tmin, std::min(ty1, ty2)), tmax = std::min(tmax, std::max(ty1, ty2));
+    float tz1 = (bmin.z - ray.origin.z) / ray.direction.z, tz2 = (bmax.z - ray.origin.z) / ray.direction.z;
+    tmin = std::max(tmin, std::min(tz1, tz2)), tmax = std::min(tmax, std::max(tz1, tz2));
+    return tmax >= tmin && tmin < ray.t && tmax > 0;
 }
 
 static void update_node_bounds(BVHNode &node, const std::vector<BVHTriangle> &tris)
@@ -129,4 +140,20 @@ BVHNode *build_bvh(std::vector<BVHTriangle> &tris)
     update_node_bounds(root, tris);
     subdivide(nodes, root, tris, tris_indices);
     return nodes;
+}
+
+void intersect_ray_bvh(BVHNode *nodes, BVHRay &ray, BVHNode &node, const std::vector<BVHTriangle> &tris, std::vector<uint32_t> &tris_indices)
+{
+    if (!intersect_ray_aabb(ray, node.aabb_min, node.aabb_max))
+        return;
+    if (node.is_leaf())
+    {
+        for (uint i = 0; i < node.triangle_count; i++)
+            intersect_ray_tri(ray, tris[tris_indices[node.first_triangle_index + i]]);
+    }
+    else
+    {
+        intersect_ray_bvh(nodes, ray, nodes[node.left_child], tris, tris_indices);
+        intersect_ray_bvh(nodes, ray, nodes[node.left_child], tris, tris_indices);
+    }
 }

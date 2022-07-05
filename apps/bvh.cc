@@ -4,20 +4,21 @@
 
 #include "stl_io.hh"
 #include "vec3.hh"
+#include "bvh.hh"
 
-typedef Vec3 float3;
+// typedef Vec3 float3;
 
-struct Tri
-{
-    float3 vertex0, vertex1, vertex2;
-    float3 centroid;
-};
+// struct Tri
+// {
+//     float3 vertex0, vertex1, vertex2;
+//     float3 centroid;
+// };
 
-struct Ray
-{
-    float3 O, D;
-    float t = 1e30f;
-};
+// struct Ray
+// {
+//     float3 O, D;
+//     float t = 1e30f;
+// };
 
 #define N 64
 
@@ -38,58 +39,58 @@ static int write_ppm(const char *filepath, const uint8_t *image, int width, int 
 
 using namespace mp::io;
 
-#include <random>
+// #include <random>
 
-std::random_device rd;  // Will be used to obtain a seed for the random number engine
-std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
-std::uniform_real_distribution<> dis(0.0, 1.0);
+// std::random_device rd;  // Will be used to obtain a seed for the random number engine
+// std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+// std::uniform_real_distribution<> dis(0.0, 1.0);
 
-static float RandomFloat()
-{
-    return dis(gen);
-}
+// static float RandomFloat()
+// {
+//     return dis(gen);
+// }
 
-static float dot(const float3 &a, const float3 &b)
-{
-    return a.x * b.x + a.y * b.y + a.z * b.z;
-}
+// static float dot(const float3 &a, const float3 &b)
+// {
+//     return a.x * b.x + a.y * b.y + a.z * b.z;
+// }
 
-static float3 normalized(const float3 &v)
-{
-    float l = std::sqrt(dot(v, v));
-    return float3(v.x / l, v.y / l, v.z / l);
-}
+// static float3 normalized(const float3 &v)
+// {
+//     float l = std::sqrt(dot(v, v));
+//     return float3(v.x / l, v.y / l, v.z / l);
+// }
 
-static float3 cross(const float3 &a, const float3 &b)
-{
-    float3 out;
-    out.x = a.y * b.z - a.z * b.y;
-    out.y = a.z * b.x - a.x * b.z;
-    out.z = a.x * b.y - a.y * b.x;
-    return out;
-}
+// static float3 cross(const float3 &a, const float3 &b)
+// {
+//     float3 out;
+//     out.x = a.y * b.z - a.z * b.y;
+//     out.y = a.z * b.x - a.x * b.z;
+//     out.z = a.x * b.y - a.y * b.x;
+//     return out;
+// }
 
-void IntersectTri(Ray &ray, const Tri &tri)
-{
-    const float3 edge1 = tri.vertex1 - tri.vertex0;
-    const float3 edge2 = tri.vertex2 - tri.vertex0;
-    const float3 h = cross(ray.D, edge2);
-    const float a = dot(edge1, h);
-    if (a > -0.0001f && a < 0.0001f)
-        return; // ray parallel to triangle
-    const float f = 1 / a;
-    const float3 s = ray.O - tri.vertex0;
-    const float u = f * dot(s, h);
-    if (u < 0 || u > 1)
-        return;
-    const float3 q = cross(s, edge1);
-    const float v = f * dot(ray.D, q);
-    if (v < 0 || u + v > 1)
-        return;
-    const float t = f * dot(edge2, q);
-    if (t > 0.0001f)
-        ray.t = std::min(ray.t, t);
-}
+// void IntersectTri(Ray &ray, const Tri &tri)
+// {
+//     const float3 edge1 = tri.vertex1 - tri.vertex0;
+//     const float3 edge2 = tri.vertex2 - tri.vertex0;
+//     const float3 h = cross(ray.D, edge2);
+//     const float a = dot(edge1, h);
+//     if (a > -0.0001f && a < 0.0001f)
+//         return; // ray parallel to triangle
+//     const float f = 1 / a;
+//     const float3 s = ray.O - tri.vertex0;
+//     const float u = f * dot(s, h);
+//     if (u < 0 || u > 1)
+//         return;
+//     const float3 q = cross(s, edge1);
+//     const float v = f * dot(ray.D, q);
+//     if (v < 0 || u + v > 1)
+//         return;
+//     const float t = f * dot(edge2, q);
+//     if (t > 0.0001f)
+//         ray.t = std::min(ray.t, t);
+// }
 
 int main(int argc, char **argv)
 {
@@ -101,6 +102,15 @@ int main(int argc, char **argv)
 
     std::vector<stl::Triangle> tri_soup;
     stl::read_stl(argv[1], tri_soup);
+
+    std::vector<BVHTriangle> bvh_tris;
+    for (auto const &t : tri_soup)
+    {
+        bvh_tris.push_back({t.v1, t.v2, t.v3});
+    }
+
+    auto bvh = build_bvh(bvh_tris);
+    delete[] bvh;
 
     // Tri tri[N];
     // for (int i = 0; i < N; i++)
@@ -118,22 +128,22 @@ int main(int argc, char **argv)
     uint8_t image[width * height * 3]{};
     uint8_t *image_iter = image;
 
-    float3 camPos(0, 0, -18);
-    float3 p0(-1, 1, -15), p1(1, 1, -15), p2(-1, -1, -15);
-    Ray ray;
+    Vec3 camera_position(0, 0, -18);
+    Vec3 p0(-1, 1, -15), p1(1, 1, -15), p2(-1, -1, -15);
+    BVHRay ray;
     for (int y = 0; y < height; y++)
     {
         for (int x = 0; x < width; x++)
         {
-            float3 pixelPos = p0 + (p1 - p0) * (x / static_cast<float>(width)) + (p2 - p0) * (y / static_cast<float>(height));
-            ray.O = camPos;
-            ray.D = normalized(pixelPos - ray.O);
+            Vec3 pixel_position = p0 + (p1 - p0) * (x / static_cast<float>(width)) + (p2 - p0) * (y / static_cast<float>(height));
+            ray.origin = camera_position;
+            ray.direction = (pixel_position - ray.origin).normalized();
             ray.t = 1e30f;
 
-            for (const auto &t : tri_soup)
-            {
-                IntersectTri(ray, Tri{t.v1, t.v2, t.v3});
-            }
+            // for (const auto &t : tri_soup)
+            // {
+            //     IntersectTri(ray, Tri{t.v1, t.v2, t.v3});
+            // }
 
             if (ray.t != 1e30f)
             {

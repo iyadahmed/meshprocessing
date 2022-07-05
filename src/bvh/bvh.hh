@@ -17,6 +17,7 @@ struct BVHNode
     Vec3 aabb_min, aabb_max;
     uint32_t left_child, right_child;
     uint32_t first_triangle_index, triangle_count;
+    bool is_leaf() const { return triangle_count > 0; };
 };
 
 BVHNode *build_bvh(std::vector<BVHTriangle> &tris);
