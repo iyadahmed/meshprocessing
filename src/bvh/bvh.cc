@@ -65,7 +65,7 @@ BVH::BVH(int tris_num)
     }
     m_tris_num = tris_num;
     m_nodes = nullptr;
-    m_used_nodes_num = 0;
+    m_used_nodes_num = 1;
     // Defer build to build method, so that user has a chance to set triangles
     // TODO: maybe refactor that?
 }
