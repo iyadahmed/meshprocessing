@@ -142,7 +142,7 @@ BVHNode *build_bvh(std::vector<BVHTriangle> &tris)
     return nodes;
 }
 
-void intersect_ray_bvh(BVHNode *nodes, BVHRay &ray, BVHNode &node, const std::vector<BVHTriangle> &tris, std::vector<uint32_t> &tris_indices)
+static void intersect_ray_bvh(BVHNode *nodes, BVHRay &ray, BVHNode &node, const std::vector<BVHTriangle> &tris, std::vector<uint32_t> &tris_indices)
 {
     if (!intersect_ray_aabb(ray, node.aabb_min, node.aabb_max))
         return;
@@ -156,4 +156,42 @@ void intersect_ray_bvh(BVHNode *nodes, BVHRay &ray, BVHNode &node, const std::ve
         intersect_ray_bvh(nodes, ray, nodes[node.left_child], tris, tris_indices);
         intersect_ray_bvh(nodes, ray, nodes[node.left_child], tris, tris_indices);
     }
+}
+
+// TODO: refactor
+BVH::BVH(std::vector<BVHTriangle> &tris)
+{
+
+    m_tris = tris;
+
+    // Update centroids
+    for (auto &t : tris)
+    {
+        t.centroid = (t.vertex0 + t.vertex1 + t.vertex2) * 0.333333f;
+    }
+
+    m_nodes = new BVHNode[tris.size() - 1];
+    BVHNode &root = m_nodes[0];
+    root.right_child = root.left_child = 0;
+    root.first_triangle_index = 0;
+    root.triangle_count = tris.size();
+
+    m_tris_indices.reserve(tris.size());
+    for (int i = 0; i < tris.size(); i++)
+    {
+        m_tris_indices.push_back(i);
+    }
+
+    update_node_bounds(root, tris);
+    subdivide(m_nodes, root, tris, m_tris_indices);
+}
+
+BVH::~BVH()
+{
+    delete[] m_nodes;
+}
+
+void BVH::ray_intersection(BVHRay &ray)
+{
+    intersect_ray_bvh(m_nodes, ray, m_nodes[0], m_tris, m_tris_indices);
 }

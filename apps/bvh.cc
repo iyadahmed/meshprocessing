@@ -106,11 +106,14 @@ int main(int argc, char **argv)
     std::vector<BVHTriangle> bvh_tris;
     for (auto const &t : tri_soup)
     {
-        bvh_tris.push_back({t.v1, t.v2, t.v3});
+        auto tri = BVHTriangle{t.v1, t.v2, t.v3};
+        tri.vertex0 *= .1;
+        tri.vertex1 *= .1;
+        tri.vertex2 *= .1;
+        bvh_tris.push_back(tri);
     }
 
-    auto bvh = build_bvh(bvh_tris);
-    delete[] bvh;
+    auto bvh = BVH(bvh_tris);
 
     // Tri tri[N];
     // for (int i = 0; i < N; i++)
@@ -144,6 +147,7 @@ int main(int argc, char **argv)
             // {
             //     IntersectTri(ray, Tri{t.v1, t.v2, t.v3});
             // }
+            bvh.ray_intersection(ray);
 
             if (ray.t != 1e30f)
             {
