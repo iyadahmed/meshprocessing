@@ -2,6 +2,11 @@
 
 #include "vec3.hh"
 
+// struct float3
+// {
+//     float x, y, z;
+// };
+
 struct BVHTriangle
 {
     Vec3 vertex0, vertex1, vertex2, centroid;
@@ -15,8 +20,8 @@ struct BVHRay
 struct BVHNode
 {
     Vec3 aabb_min, aabb_max;
-    uint32_t left_child, right_child;
-    uint32_t first_triangle_index, triangle_count;
+    int left_child, right_child;
+    int first_triangle_index, triangle_count;
     bool is_leaf() const { return triangle_count > 0; };
 };
 
@@ -24,12 +29,20 @@ class BVH
 {
 private:
     BVHNode *m_nodes;
-    std::vector<uint32_t> m_tris_indices;
-    std::vector<BVHTriangle> m_tris;
+    int m_used_nodes_num;
+    // TODO: share triangles between BVH and the outside world (e.g. animation system)
+    BVHTriangle *m_tris;
+    int *m_tris_indices;
+    int m_tris_num;
+
+    void update_node_bounds(int node_index);
+    void subdivide(int node_index);
 
 public:
-    BVH(std::vector<BVHTriangle> &tris);
+    BVH(int tris_num);
     ~BVH();
 
-    void ray_intersection(BVHRay &ray);
+    void build();
+    BVHTriangle &triangle(int index) const;
+    void intersect_ray(BVHRay &ray, int node_index = 0) const;
 };
