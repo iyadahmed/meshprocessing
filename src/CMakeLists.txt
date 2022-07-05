@@ -20,9 +20,10 @@ target_include_directories(stl PUBLIC io/stl PRIVATE io/stl/importer io/stl/expo
 target_link_libraries(stl PRIVATE string_buffer)
 target_compile_features(stl PUBLIC cxx_std_17)
 
-add_library(vec3 vec3/vec3.cc vec3/vec3.hh)
-target_include_directories(vec3 PUBLIC vec3)
-target_compile_features(vec3 PUBLIC cxx_std_11)
+add_library(vec3 INTERFACE)
+target_sources(vec3 INTERFACE vec3/vec3.hh)
+target_include_directories(vec3 INTERFACE vec3)
+target_compile_features(vec3 INTERFACE cxx_std_11)
 
 add_library(bvh bvh/bvh.cc bvh/bvh.hh)
 target_include_directories(bvh PUBLIC bvh)
@@ -32,5 +33,5 @@ target_compile_features(bvh PUBLIC cxx_std_11)
 find_library(MATH_LIBRARY m)
 
 if(MATH_LIBRARY)
-    target_link_libraries(vec3 PUBLIC ${MATH_LIBRARY})
+    target_link_libraries(vec3 INTERFACE ${MATH_LIBRARY})
 endif()
