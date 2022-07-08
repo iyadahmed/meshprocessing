@@ -33,6 +33,12 @@ add_executable(mcpip mcpip.cc)
 target_compile_features(mcpip PRIVATE cxx_std_17)
 target_link_libraries(mcpip PRIVATE stl vec3 CGAL::CGAL)
 
-add_executable(mcpip_embree mcpip_embree.cc)
+add_executable(mcpip_embree
+    mcpip_embree/mcpip_embree.cc
+    mcpip_embree/embree_device.hh
+    mcpip_embree/embree_do_intersect.hh
+    mcpip_embree/embree_scene.hh
+    mcpip_embree/mc_sphere_full_samples.hh
+)
 target_compile_features(mcpip_embree PRIVATE cxx_std_17)
 target_link_libraries(mcpip_embree PRIVATE stl vec3 embree3)
