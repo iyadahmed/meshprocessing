@@ -5,6 +5,7 @@
 
 #include "stl_io.hh"
 #include "vec3.hh"
+#include "timers.hh"
 
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/AABB_tree.h>
@@ -148,24 +149,33 @@ static std::vector<CGALTriangle3> load_stl(const char *filepath)
     return out;
 }
 
-static bool is_inside(const Tree &tree, const CGALPoint3 &query_point)
+static bool is_inside(const Tree &tree, const CGALPoint3 &&query_point)
 {
     int odd_intersections_num = 0;
     int non_zero_intersections_num = 0;
     for (int i = 0; i < sizeof(SPHERE_SAMPLES) / sizeof(SPHERE_SAMPLES[0]); i++)
     {
-        CGALRay3 ray(query_point, SPHERE_SAMPLES[i]);
-        size_t n = tree.number_of_intersected_primitives(ray);
-        if (n != 0)
-        {
-            non_zero_intersections_num += 1;
-            odd_intersections_num += (n & 1);
-        }
+        size_t n = tree.number_of_intersected_primitives<CGALRay3>({query_point, SPHERE_SAMPLES[i]});
+        non_zero_intersections_num += (bool)n;
+        odd_intersections_num += (n & 1);
     }
 
-    // TODO: fix more points are classified as inside when using odd-even test only
-    // we might fix this by forcing a minimum percentage of rays that hit something
-    return odd_intersections_num >= (.5 * static_cast<float>(non_zero_intersections_num));
+    return (odd_intersections_num >= (.5 * float(non_zero_intersections_num)))
+
+           && (non_zero_intersections_num >= (.4 * float(sizeof(SPHERE_SAMPLES) / sizeof(SPHERE_SAMPLES[0]))));
+}
+
+static bool is_inside_no_holes(const Tree &tree, const CGALPoint3 &query_point)
+{
+    for (int i = 0; i < sizeof(SPHERE_SAMPLES) / sizeof(SPHERE_SAMPLES[0]); i++)
+    {
+        CGALRay3 ray(query_point, SPHERE_SAMPLES[i]);
+        if (!tree.do_intersect(ray))
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 int main(int argc, char **argv)
@@ -218,6 +228,7 @@ int main(int argc, char **argv)
     int num_points = num_x * num_y * num_z;
     printf("Number of grid points before filtering = %d\n", num_points);
 
+    Timer timer;
 #pragma omp parallel for collapse(3)
     for (int i = 0; i < num_x; i++)
     {
@@ -225,19 +236,22 @@ int main(int argc, char **argv)
         {
             for (int k = 0; k < num_z; k++)
             {
-                CGALPoint3 query_point(i * grid_step + bb_min.x, j * grid_step + bb_min.y, k * grid_step + bb_min.z);
-                if (is_inside(tree, query_point))
+                double x = i * grid_step + bb_min.x;
+                double y = j * grid_step + bb_min.y;
+                double z = k * grid_step + bb_min.z;
+                if (is_inside(tree, {x, y, z}))
                 {
 #pragma omp critical
                     {
-                        file.write(reinterpret_cast<const char *>(&query_point.x()), sizeof(double));
-                        file.write(reinterpret_cast<const char *>(&query_point.y()), sizeof(double));
-                        file.write(reinterpret_cast<const char *>(&query_point.z()), sizeof(double));
+                        file.write(reinterpret_cast<const char *>(&x), sizeof(double));
+                        file.write(reinterpret_cast<const char *>(&y), sizeof(double));
+                        file.write(reinterpret_cast<const char *>(&z), sizeof(double));
                     }
                 }
             }
         }
     }
+    timer.tock("Filtering points");
 
     return 0;
 }
