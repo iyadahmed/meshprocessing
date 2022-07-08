@@ -57,6 +57,16 @@ struct float3
     }
 };
 
+inline float3 cross(const float3 &a, const float3 &b)
+{
+    return a.cross(b);
+}
+
+inline float dot(const float3 &a, const float3 &b)
+{
+    return a.dot(b);
+}
+
 struct BVHTriangle
 {
     float3 v0, v1, v2, centroid;
@@ -65,6 +75,7 @@ struct BVHTriangle
 struct BVHRay
 {
     float3 O, D;
+    float t = 1e30f;
 };
 
 struct BVHNode
@@ -72,8 +83,41 @@ struct BVHNode
     float3 aabb_min, aabb_max;
     int left_child, right_child;
     int first_tri_index, tri_count;
-    bool is_leaf() const { return tri_count; }
+    bool is_leaf() const { return tri_count > 0; }
 };
+
+void intersect_ray_tri(BVHRay &ray, const BVHTriangle &tri)
+{
+    const float3 edge1 = tri.v1 - tri.v0;
+    const float3 edge2 = tri.v2 - tri.v0;
+    const float3 h = cross(ray.D, edge2);
+    const float a = dot(edge1, h);
+    if (a > -0.0001f && a < 0.0001f)
+        return; // ray parallel to triangle
+    const float f = 1 / a;
+    const float3 s = ray.O - tri.v0;
+    const float u = f * dot(s, h);
+    if (u < 0 || u > 1)
+        return;
+    const float3 q = cross(s, edge1);
+    const float v = f * dot(ray.D, q);
+    if (v < 0 || u + v > 1)
+        return;
+    const float t = f * dot(edge2, q);
+    if (t > 0.0001f)
+        ray.t = std::min(ray.t, t);
+}
+
+bool intersect_ray_aabb(const BVHRay &ray, const float3 &bmin, const float3 &bmax)
+{
+    float tx1 = (bmin.x - ray.O.x) / ray.D.x, tx2 = (bmax.x - ray.O.x) / ray.D.x;
+    float tmin = std::min(tx1, tx2), tmax = std::max(tx1, tx2);
+    float ty1 = (bmin.y - ray.O.y) / ray.D.y, ty2 = (bmax.y - ray.O.y) / ray.D.y;
+    tmin = std::max(tmin, std::min(ty1, ty2)), tmax = std::min(tmax, std::max(ty1, ty2));
+    float tz1 = (bmin.z - ray.O.z) / ray.D.z, tz2 = (bmax.z - ray.O.z) / ray.D.z;
+    tmin = std::max(tmin, std::min(tz1, tz2)), tmax = std::min(tmax, std::max(tz1, tz2));
+    return tmax >= tmin && tmin < ray.t && tmax > 0;
+}
 
 class BVH
 {
@@ -146,12 +190,15 @@ private:
         int left_child_index = used_nodes_num_++;
         int right_child_index = used_nodes_num_++;
 
+        node.left_child = left_child_index;
+        node.right_child = right_child_index;
+
         nodes_[left_child_index].first_tri_index = node.first_tri_index;
         nodes_[left_child_index].tri_count = left_count;
         nodes_[right_child_index].first_tri_index = i;
         nodes_[right_child_index].tri_count = node.tri_count - left_count;
 
-        node.first_tri_index = left_child_index;
+        // node.first_tri_index = left_child_index;
         node.tri_count = 0;
         update_node_bounds(left_child_index);
         update_node_bounds(right_child_index);
@@ -196,6 +243,22 @@ public:
 
         update_node_bounds(0);
         subdivide(0);
+    }
+    void intersect_ray(BVHRay &ray, int node_index)
+    {
+        BVHNode &node = nodes_[node_index];
+        if (!intersect_ray_aabb(ray, node.aabb_min, node.aabb_max))
+            return;
+        if (node.is_leaf())
+        {
+            for (int i = node.first_tri_index; i < node.tri_count; i++)
+                intersect_ray_tri(ray, tris_[i]);
+        }
+        else
+        {
+            intersect_ray(ray, node.left_child);
+            intersect_ray(ray, node.left_child + 1);
+        }
     }
 };
 
