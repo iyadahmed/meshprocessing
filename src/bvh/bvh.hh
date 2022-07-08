@@ -81,8 +81,7 @@ struct BVHRay
 struct BVHNode
 {
     float3 aabb_min, aabb_max;
-    int left_child, right_child;
-    int first_tri_index, tri_count;
+    int left_child_index, first_tri_index, tri_count;
     bool is_leaf() const { return tri_count > 0; }
 };
 
@@ -190,15 +189,14 @@ private:
         int left_child_index = used_nodes_num_++;
         int right_child_index = used_nodes_num_++;
 
-        node.left_child = left_child_index;
-        node.right_child = right_child_index;
+        node.left_child_index = left_child_index;
 
         nodes_[left_child_index].first_tri_index = node.first_tri_index;
         nodes_[left_child_index].tri_count = left_count;
+
         nodes_[right_child_index].first_tri_index = i;
         nodes_[right_child_index].tri_count = node.tri_count - left_count;
 
-        // node.first_tri_index = left_child_index;
         node.tri_count = 0;
         update_node_bounds(left_child_index);
         update_node_bounds(right_child_index);
@@ -238,7 +236,7 @@ public:
         }
 
         BVHNode &root = nodes_[0];
-        root.first_tri_index = root.left_child = root.right_child = 0;
+        root.first_tri_index = root.left_child_index = 0;
         root.tri_count = tris_num_;
 
         update_node_bounds(0);
@@ -256,8 +254,8 @@ public:
         }
         else
         {
-            intersect_ray(ray, node.left_child);
-            intersect_ray(ray, node.left_child + 1);
+            intersect_ray(ray, node.left_child_index);
+            intersect_ray(ray, node.left_child_index + 1);
         }
     }
 };
