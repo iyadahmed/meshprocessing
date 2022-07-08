@@ -28,3 +28,7 @@ target_link_libraries(bvhapp PRIVATE stl vec3 bvh)
 add_executable(bvhapp2 bvh2.cc)
 target_compile_features(bvhapp2 PRIVATE cxx_std_17)
 target_link_libraries(bvhapp2 PRIVATE stl vec3 bvh)
+
+add_executable(mcpip mcpip.cc)
+target_compile_features(mcpip PRIVATE cxx_std_17)
+target_link_libraries(mcpip PRIVATE stl vec3 CGAL::CGAL)
