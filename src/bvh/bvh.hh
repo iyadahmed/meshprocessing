@@ -128,7 +128,7 @@ private:
     void update_node_bounds(int node_index)
     {
         BVHNode &node = nodes_[node_index];
-        node.aabb_max = float3(-1e10);
+        node.aabb_max = float3(-1e30);
         node.aabb_min = float3(1e30);
 
         for (int i = node.first_tri_index; i < node.tri_count; i++)
