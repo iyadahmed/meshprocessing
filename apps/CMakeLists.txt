@@ -39,7 +39,6 @@ add_executable(mcpip_embree
     mcpip_embree/embree_do_intersect.hh
     mcpip_embree/embree_num_intersections.hh
     mcpip_embree/embree_scene.hh
-    mcpip_embree/mc_sphere_full_samples.hh
 )
 target_compile_features(mcpip_embree PRIVATE cxx_std_17)
 target_link_libraries(mcpip_embree PRIVATE stl vec3 embree3 OpenMP::OpenMP_CXX)

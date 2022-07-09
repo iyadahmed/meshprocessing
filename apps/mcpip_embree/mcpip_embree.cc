@@ -9,7 +9,7 @@
 #include "vec3.hh"
 #include "../timers.hh"
 
-#include "mc_sphere_full_samples.hh"
+#include "../monte_carlo_full_sphere_samples.hh"
 #include "embree_do_intersect.hh"
 #include "embree_num_intersections.hh"
 #include "embree_device.hh"
