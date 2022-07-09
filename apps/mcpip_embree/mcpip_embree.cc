@@ -11,26 +11,27 @@
 
 #include "mc_sphere_full_samples.hh"
 #include "embree_do_intersect.hh"
+#include "embree_num_intersections.hh"
 #include "embree_device.hh"
 #include "embree_scene.hh"
 
 using namespace mp::io::stl;
 
-// static bool is_inside(const RTCScene &scene, const float &x, const float &y, const float &z)
-// {
-//     int odd_intersections_num = 0;
-//     int non_zero_intersections_num = 0;
-//     for (int i = 0; i < NUM_SPHERE_SAMPLES; i++)
-//     {
-//         size_t n = tree.number_of_intersected_primitives<CGALRay3>({query_point, SPHERE_SAMPLES[i]});
-//         non_zero_intersections_num += (bool)n;
-//         odd_intersections_num += (n & 1);
-//     }
+static bool is_inside(const RTCScene &scene, const float &x, const float &y, const float &z)
+{
+    int odd_intersections_num = 0;
+    int non_zero_intersections_num = 0;
+    for (int i = 0; i < NUM_SPHERE_SAMPLES; i++)
+    {
+        int n = num_intersections(scene, x, y, z, SPHERE_SAMPLES[i][0], SPHERE_SAMPLES[i][1], SPHERE_SAMPLES[i][2]);
+        non_zero_intersections_num += (bool)n;
+        odd_intersections_num += (n & 1);
+    }
 
-//     return (odd_intersections_num >= (.5 * float(non_zero_intersections_num)))
+    return (odd_intersections_num >= (.5 * float(non_zero_intersections_num)))
 
-//            && (non_zero_intersections_num >= (.4 * float(sizeof(SPHERE_SAMPLES) / sizeof(SPHERE_SAMPLES[0]))));
-// }
+           && (non_zero_intersections_num >= (.4 * float(sizeof(SPHERE_SAMPLES) / sizeof(SPHERE_SAMPLES[0]))));
+}
 
 static bool is_inside_no_holes(const RTCScene &scene, const float &x, const float &y, const float &z)
 {
@@ -107,7 +108,7 @@ int main(int argc, char **argv)
                 float x = i * grid_step + bb_min.x;
                 float y = j * grid_step + bb_min.y;
                 float z = k * grid_step + bb_min.z;
-                if (is_inside_no_holes(scene, x, y, z))
+                if (is_inside(scene, x, y, z))
                 {
 #pragma omp critical
                     {

@@ -37,6 +37,7 @@ add_executable(mcpip_embree
     mcpip_embree/mcpip_embree.cc
     mcpip_embree/embree_device.hh
     mcpip_embree/embree_do_intersect.hh
+    mcpip_embree/embree_num_intersections.hh
     mcpip_embree/embree_scene.hh
     mcpip_embree/mc_sphere_full_samples.hh
 )
