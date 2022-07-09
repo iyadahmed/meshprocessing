@@ -30,7 +30,7 @@ static bool is_inside(const RTCScene &scene, const float &x, const float &y, con
 
     return (odd_intersections_num >= (.5 * float(non_zero_intersections_num)))
 
-           && (non_zero_intersections_num >= (.4 * float(sizeof(SPHERE_SAMPLES) / sizeof(SPHERE_SAMPLES[0]))));
+           && (non_zero_intersections_num >= (.4 * NUM_SPHERE_SAMPLES));
 }
 
 static bool is_inside_no_holes(const RTCScene &scene, const float &x, const float &y, const float &z)
