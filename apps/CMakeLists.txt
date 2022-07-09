@@ -11,6 +11,18 @@ add_executable(boolean2 boolean2.cc)
 target_compile_features(boolean2 PRIVATE cxx_std_17)
 target_link_libraries(boolean2 PRIVATE stl CGAL::CGAL)
 
+add_executable(boolean3 boolean3.cc)
+target_compile_features(boolean3 PRIVATE cxx_std_17)
+target_link_libraries(boolean3 PRIVATE stl CGAL::CGAL)
+
+add_executable(boolean4 boolean4.cc)
+target_compile_features(boolean4 PRIVATE cxx_std_17)
+target_link_libraries(boolean4 PRIVATE stl CGAL::CGAL embree3)
+
+add_executable(minimal_embree_bvh_build minimal_embree_bvh_build.cc minimal_embree_bvh_build.hh)
+target_compile_features(minimal_embree_bvh_build PRIVATE cxx_std_17)
+target_link_libraries(minimal_embree_bvh_build PRIVATE stl vec3 embree3)
+
 find_package(TBB REQUIRED)
 add_executable(winding_numbers winding_numbers.cc)
 target_compile_features(winding_numbers PRIVATE cxx_std_17)
