@@ -129,9 +129,12 @@ int main(int argc, char *argv[])
                     int cell_index = x + y * num_y + z * (num_x * num_y);
                     for (const auto &neighbour_tri_index : cells[cell_index])
                     {
-                        if (CGAL::do_intersect(to_cgal_triangle(t), to_cgal_triangle(tri_soup[neighbour_tri_index])))
+                        if (i != neighbour_tri_index)
                         {
-                            interescetions.push_back({i, neighbour_tri_index});
+                            if (CGAL::do_intersect(to_cgal_triangle(t), to_cgal_triangle(tri_soup[neighbour_tri_index])))
+                            {
+                                interescetions.push_back({i, neighbour_tri_index});
+                            }
                         }
                     }
                 }
