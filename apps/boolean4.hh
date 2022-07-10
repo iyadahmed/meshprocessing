@@ -70,7 +70,7 @@ inline Triangle to_cgal_triangle(const stl::Triangle &t)
     };
 }
 
-inline bool intersect_triangle_triangle(const std::vector<stl::Triangle> &tri_soup, unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1)
+inline bool do_intersect(const std::vector<stl::Triangle> &tri_soup, unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1)
 {
     if (primID0 == primID1)
     {
@@ -92,10 +92,10 @@ inline void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned
     Data *data = (Data *)user_data_ptr;
     for (size_t i = 0; i < num_collisions; i++)
     {
-        bool intersect = intersect_triangle_triangle(data->tri_soup,
-                                                     collisions[i].geomID0, collisions[i].primID0,
-                                                     collisions[i].geomID1, collisions[i].primID1);
-        if (intersect)
+        bool is_intersection = do_intersect(data->tri_soup,
+                                            collisions[i].geomID0, collisions[i].primID0,
+                                            collisions[i].geomID1, collisions[i].primID1);
+        if (is_intersection)
         {
             std::scoped_lock lock(data->mutex);
             data->intersections.push_back({{collisions[i].geomID0, collisions[i].primID0}, {collisions[i].geomID1, collisions[i].primID1}});
