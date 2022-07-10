@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
     rtcCollide(scene, scene, collide_func, data);
     timer.tock("rtcCollide");
 
-    std::cout << data->intersections_num << std::endl;
+    std::cout << data->intersections.size() << std::endl;
 
     rtcReleaseScene(scene);
     rtcReleaseDevice(device);

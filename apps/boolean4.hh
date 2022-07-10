@@ -43,12 +43,22 @@ struct BBox3fa
     }
 };
 
+struct GeometryPoint
+{
+    unsigned geomID, primID;
+};
+
+struct IntersectionPair
+{
+    GeometryPoint a, b;
+};
+
 /* Self-intersection data */
 struct Data
 {
     std::vector<stl::Triangle> tri_soup;
     std::mutex mutex;
-    size_t intersections_num = 0;
+    std::vector<IntersectionPair> intersections;
 };
 
 inline Triangle to_cgal_triangle(const stl::Triangle &t)
@@ -76,25 +86,20 @@ inline bool intersect_triangle_triangle(const std::vector<stl::Triangle> &tri_so
 
 inline void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned int num_collisions)
 {
+    if (num_collisions == 0)
+        return;
+
     Data *data = (Data *)user_data_ptr;
-    for (size_t i = 0; i < num_collisions;)
+    for (size_t i = 0; i < num_collisions; i++)
     {
         bool intersect = intersect_triangle_triangle(data->tri_soup,
                                                      collisions[i].geomID0, collisions[i].primID0,
                                                      collisions[i].geomID1, collisions[i].primID1);
         if (intersect)
-            i++;
-        else
-            collisions[i] = collisions[--num_collisions];
-    }
-
-    if (num_collisions == 0)
-        return;
-
-    // TODO: collect intersections
-    {
-        std::scoped_lock lock(data->mutex);
-        data->intersections_num += 1;
+        {
+            std::scoped_lock lock(data->mutex);
+            data->intersections.push_back({{collisions[i].geomID0, collisions[i].primID0}, {collisions[i].geomID1, collisions[i].primID1}});
+        }
     }
 }
 
