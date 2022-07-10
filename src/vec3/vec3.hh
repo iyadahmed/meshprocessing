@@ -33,30 +33,30 @@ struct Vec3
 
     static void min(Vec3 &out, const Vec3 &a, const Vec3 &b) noexcept
     {
-        out.x = fminf(a.x, b.x);
-        out.y = fminf(a.y, b.y);
-        out.z = fminf(a.z, b.z);
+        out.x = std::min(a.x, b.x);
+        out.y = std::min(a.y, b.y);
+        out.z = std::min(a.z, b.z);
     }
 
     static void max(Vec3 &out, const Vec3 &a, const Vec3 &b) noexcept
     {
-        out.x = fmaxf(a.x, b.x);
-        out.y = fmaxf(a.y, b.y);
-        out.z = fmaxf(a.z, b.z);
+        out.x = std::max(a.x, b.x);
+        out.y = std::max(a.y, b.y);
+        out.z = std::max(a.z, b.z);
     }
 
     void min(const Vec3 &other) noexcept
     {
-        x = fminf(x, other.x);
-        y = fminf(y, other.y);
-        z = fminf(z, other.z);
+        x = std::min(x, other.x);
+        y = std::min(y, other.y);
+        z = std::min(z, other.z);
     }
 
     void max(const Vec3 &other) noexcept
     {
-        x = fmaxf(x, other.x);
-        y = fmaxf(y, other.y);
-        z = fmaxf(z, other.z);
+        x = std::max(x, other.x);
+        y = std::max(y, other.y);
+        z = std::max(z, other.z);
     }
 
     float dot(const Vec3 &other) const noexcept
