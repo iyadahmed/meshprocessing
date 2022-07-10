@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <limits>
 #include <execution>
+#include <iostream>
 
 #include "stl_io.hh"
 #include "vec3.hh"
@@ -11,8 +12,8 @@ using namespace mp::io;
 
 struct Bounds
 {
-    Vec3 max;
-    Vec3 min;
+    Vec3 max{-std::numeric_limits<float>::infinity()};
+    Vec3 min{std::numeric_limits<float>::infinity()};
     void extend(const Vec3 &v)
     {
         max.max(v);
@@ -24,6 +25,22 @@ struct Triangle
 {
     Vec3 a, b, c;
     Bounds bounds;
+};
+
+struct BooleanBounds
+{
+    // Avreage bounding box dimensions for triangles
+    Vec3 avg_dims{};
+    // Bounding box containing all triangles
+    Bounds bb{};
+    BooleanBounds operator+(const BooleanBounds &other)
+    {
+        BooleanBounds out;
+        out.avg_dims = avg_dims + other.avg_dims;
+        Vec3::max(out.bb.max, bb.max, other.bb.max);
+        Vec3::min(out.bb.min, bb.min, other.bb.min);
+        return out;
+    }
 };
 
 int main(int argc, char *argv[])
@@ -45,19 +62,27 @@ int main(int argc, char *argv[])
     auto map_func = [&](const stl::Triangle &t)
     {
         Vec3 *verts = (Vec3 *)t.verts;
-        Vec3 bb_max = -std::numeric_limits<float>::infinity();
-        Vec3 bb_min = std::numeric_limits<float>::infinity();
+        Bounds bb;
+        bb.max = -std::numeric_limits<float>::infinity();
+        bb.min = std::numeric_limits<float>::infinity();
         for (int i = 0; i < 3; i++)
         {
-            bb_max.max(verts[i]);
-            bb_min.min(verts[i]);
+            bb.extend(verts[i]);
         }
-        return (bb_max - bb_min) / tris_num;
+        return BooleanBounds{(bb.max - bb.min) / tris_num, bb};
     };
     Timer timer;
-    Vec3 avg_dims = std::transform_reduce(std::execution::par, tri_soup.cbegin(), tri_soup.cend(), Vec3(0.0f), std::plus{}, map_func);
+    BooleanBounds boolean_bounds = std::transform_reduce(std::execution::par,
+                                                         tri_soup.cbegin(),
+                                                         tri_soup.cend(),
+                                                         BooleanBounds(),
+                                                         std::plus{},
+                                                         map_func);
     timer.tock("Calculating avreage bounding box dimensions for triangles.");
 
-    printf("<(%f, %f, %f)>\n", avg_dims.x, avg_dims.y, avg_dims.z);
+    printf("Avg. BB <(%f, %f, %f)>\n", boolean_bounds.avg_dims.x, boolean_bounds.avg_dims.y, boolean_bounds.avg_dims.z);
+
+    std::cout << "Avg. Triangle BB = " << boolean_bounds.avg_dims << std::endl;
+    std::cout << "Mesh Bounding Box: Max(" << boolean_bounds.bb.max << "), Min(" << boolean_bounds.bb.min << ")" << std::endl;
     return 0;
 }
