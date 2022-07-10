@@ -1,9 +1,11 @@
 #include <vector>
 #include <cstdio>
 #include <limits>
+#include <execution>
 
 #include "stl_io.hh"
 #include "vec3.hh"
+#include "timers.hh"
 
 using namespace mp::io;
 
@@ -39,22 +41,22 @@ int main(int argc, char *argv[])
     stl::read_stl(filepath_1, tri_soup);
     stl::read_stl(filepath_2, tri_soup);
 
-    Vec3 avg_dims(0.0f);
     size_t tris_num = tri_soup.size();
-    Vec3 bb_max, bb_min;
-    for (const auto &t : tri_soup)
+    auto map_func = [&](const stl::Triangle &t)
     {
         Vec3 *verts = (Vec3 *)t.verts;
-        bb_max = -std::numeric_limits<float>::infinity();
-        bb_min = std::numeric_limits<float>::infinity();
-
+        Vec3 bb_max = -std::numeric_limits<float>::infinity();
+        Vec3 bb_min = std::numeric_limits<float>::infinity();
         for (int i = 0; i < 3; i++)
         {
             bb_max.max(verts[i]);
             bb_min.min(verts[i]);
         }
-        avg_dims += (bb_max - bb_min) / tris_num;
-    }
+        return (bb_max - bb_min) / tris_num;
+    };
+    Timer timer;
+    Vec3 avg_dims = std::transform_reduce(std::execution::par, tri_soup.cbegin(), tri_soup.cend(), Vec3(0.0f), std::plus{}, map_func);
+    timer.tock("Calculating avreage bounding box dimensions for triangles.");
 
     printf("<(%f, %f, %f)>\n", avg_dims.x, avg_dims.y, avg_dims.z);
     return 0;
