@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 {
     if (argc != 3)
     {
-        std::cout << "Usage: boolean3 a.stl b.stl" << std::endl;
+        std::cout << "Usage: boolean4 a.stl b.stl" << std::endl;
         return 1;
     }
 
