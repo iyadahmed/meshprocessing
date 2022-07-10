@@ -51,6 +51,7 @@ int main(int argc, char *argv[])
 
     rtcReleaseScene(scene);
     rtcReleaseDevice(device);
+    delete data_ptr;
 
     return 0;
 }
