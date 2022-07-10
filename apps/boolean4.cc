@@ -3,13 +3,67 @@
 #include <iostream>
 #include <limits>
 
+#include <CGAL/AABB_tree.h>
+#include <CGAL/AABB_traits.h>
+#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+#include <CGAL/Triangulation_2.h>
+#include <CGAL/Triangulation_vertex_base_with_info_2.h>
+// Use exact predicates and constructions to avoid precondition exception (degenerate edges being generated while intersecting triangles)
+// Also for better precision and handling coplanar cases
+typedef CGAL::Exact_predicates_exact_constructions_kernel K;
+typedef K::Point_3 Point;
+typedef K::Triangle_3 Triangle;
+typedef K::Segment_3 Segment;
+typedef K::Vector_3 Vector;
+
 #include "stl_io.hh"
 
 using namespace mp::io;
 
-static void collide_func(void *user_data_ptr, RTCCollision *collisions, int num_collisions)
+/* Self-intersection data */
+struct Data
 {
-    // TODO
+    std::vector<stl::Triangle> tri_soup;
+};
+
+bool intersect_triangle_triangle(const std::vector<stl::Triangle> &tri_soup, unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1)
+{
+    if (primID0 == primID1)
+    {
+        return false;
+    }
+
+    const stl::Triangle &t1 = tri_soup[primID0];
+    const stl::Triangle &t2 = tri_soup[primID1];
+    Triangle cgal_t1, cgal_t2;
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            cgal_t1.vertex(i)[j] = t1.verts[i][j];
+            cgal_t2.vertex(i)[j] = t2.verts[i][j];
+        }
+    }
+    return CGAL::do_intersect(cgal_t1, cgal_t2);
+}
+
+static void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned int num_collisions)
+{
+    for (size_t i = 0; i < num_collisions;)
+    {
+        bool intersect = intersect_triangle_triangle(((Data *)user_data_ptr)->tri_soup,
+                                                     collisions[i].geomID0, collisions[i].primID0,
+                                                     collisions[i].geomID1, collisions[i].primID1);
+        if (intersect)
+            i++;
+        else
+            collisions[i] = collisions[--num_collisions];
+    }
+
+    if (num_collisions == 0)
+        return;
+
+    // TODO: collect intersections
 }
 
 int main(int argc, char *argv[])
@@ -26,24 +80,27 @@ int main(int argc, char *argv[])
     RTCDevice device = rtcNewDevice(NULL);
     RTCScene scene = rtcNewScene(device);
 
-    std::vector<stl::Triangle> tri_soup;
-    stl::read_stl(filepath_1, tri_soup);
-    stl::read_stl(filepath_2, tri_soup);
+    // Data MUST be allocated on heap to be shared between threads
+    Data *data_ptr = new Data{};
 
+    stl::read_stl(filepath_1, data_ptr->tri_soup);
+    stl::read_stl(filepath_2, data_ptr->tri_soup);
+
+    // TODO: use user defined geometry as rtcCollide only works with that
     RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
     float *vertices = (float *)rtcSetNewGeometryBuffer(geom,
                                                        RTC_BUFFER_TYPE_VERTEX,
                                                        0,
                                                        RTC_FORMAT_FLOAT3,
                                                        3 * sizeof(float),
-                                                       tri_soup.size() * 3);
+                                                       data_ptr->tri_soup.size() * 3);
 
     unsigned *indices = (unsigned *)rtcSetNewGeometryBuffer(geom,
                                                             RTC_BUFFER_TYPE_INDEX,
                                                             0,
                                                             RTC_FORMAT_UINT3,
                                                             3 * sizeof(unsigned),
-                                                            tri_soup.size());
+                                                            data_ptr->tri_soup.size());
 
     if (!(vertices && indices))
     {
@@ -53,7 +110,7 @@ int main(int argc, char *argv[])
 
     int vi = 0;
     int ii = 0;
-    for (const auto &t : tri_soup)
+    for (const auto &t : data_ptr->tri_soup)
     {
         for (int i = 0; i < 3; i++)
         {
@@ -90,6 +147,9 @@ int main(int argc, char *argv[])
      * Embree know that it may start building an acceleration structure.
      */
     rtcCommitScene(scene);
+
+    // Perform self intersection
+    rtcCollide(scene, scene, collide_func, data_ptr);
 
     rtcReleaseScene(scene);
     rtcReleaseDevice(device);

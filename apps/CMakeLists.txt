@@ -17,7 +17,7 @@ target_link_libraries(boolean3 PRIVATE stl CGAL::CGAL)
 
 add_executable(boolean4 boolean4.cc)
 target_compile_features(boolean4 PRIVATE cxx_std_17)
-target_link_libraries(boolean4 PRIVATE stl CGAL::CGAL embree3)
+target_link_libraries(boolean4 PRIVATE stl vec3 CGAL::CGAL embree3)
 
 add_executable(minimal_embree_bvh_build minimal_embree_bvh_build.cc minimal_embree_bvh_build.hh)
 target_compile_features(minimal_embree_bvh_build PRIVATE cxx_std_17)
