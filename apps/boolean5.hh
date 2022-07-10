@@ -6,7 +6,7 @@
 #include <CGAL/Triangulation_2.h>
 #include <CGAL/Triangulation_vertex_base_with_info_2.h>
 
-typedef CGAL::Simple_cartesian<double> K;
+typedef CGAL::Exact_predicates_exact_constructions_kernel K;
 typedef K::Triangle_3 Triangle;
 typedef K::Point_3 Point;
 typedef K::Segment_3 Segment;

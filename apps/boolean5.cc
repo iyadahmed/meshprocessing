@@ -175,10 +175,15 @@ int main(int argc, char *argv[])
     std::ofstream file("foo.pts", std::ios::binary);
     for (const auto &ip : intersection_points)
     {
-        file.write(reinterpret_cast<const char *>(&ip.x()), sizeof(double));
-        file.write(reinterpret_cast<const char *>(&ip.y()), sizeof(double));
-        file.write(reinterpret_cast<const char *>(&ip.z()), sizeof(double));
+        double x = CGAL::to_double(ip.x());
+        double y = CGAL::to_double(ip.y());
+        double z = CGAL::to_double(ip.z());
+        file.write((char *)(&x), sizeof(double));
+        file.write((char *)(&y), sizeof(double));
+        file.write((char *)(&z), sizeof(double));
     }
+
+    // TODO: intersect edges instead
 
     std::cout << "Avg. Triangle BB = " << bb_dims_avg << std::endl;
     std::cout << "Mesh Bounding Box: Max(" << bb_max << "), Min(" << bb_min << ")" << std::endl;
