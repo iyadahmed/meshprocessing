@@ -1,4 +1,5 @@
 #include <cmath>
+#include <iostream>
 
 struct float3
 {
@@ -189,15 +190,15 @@ private:
         int left_child_index = used_nodes_num_++;
         int right_child_index = used_nodes_num_++;
 
-        node.left_child_index = left_child_index;
-
         nodes_[left_child_index].first_tri_index = node.first_tri_index;
         nodes_[left_child_index].tri_count = left_count;
 
         nodes_[right_child_index].first_tri_index = i;
         nodes_[right_child_index].tri_count = node.tri_count - left_count;
 
+        node.left_child_index = left_child_index;
         node.tri_count = 0;
+
         update_node_bounds(left_child_index);
         update_node_bounds(right_child_index);
 
@@ -241,6 +242,15 @@ public:
 
         update_node_bounds(0);
         subdivide(0);
+
+        for (int i = 0; i < used_nodes_num_; i++)
+        {
+            const BVHNode &n = nodes_[i];
+            std::cout << "AABB Max: ";
+            std::cout << "(" << n.aabb_max.x << ", " << n.aabb_max.y << ", " << n.aabb_max.z << ")";
+            std::cout << ", Min: (" << n.aabb_min.x << ", " << n.aabb_min.y << ", " << n.aabb_min.z << ")";
+            std::cout << std::endl;
+        }
     }
     void intersect_ray(BVHRay &ray, int node_index)
     {
