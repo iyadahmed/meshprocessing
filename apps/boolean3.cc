@@ -4,7 +4,8 @@
 #include <fstream>
 #include <vector>
 
-typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
+// typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
+typedef CGAL::Simple_cartesian<double> K; // Faster but misses intersections
 typedef CGAL::Surface_mesh<K::Point_3> Mesh;
 typedef boost::graph_traits<Mesh>::face_descriptor face_descriptor;
 namespace PMP = CGAL::Polygon_mesh_processing;
