@@ -29,6 +29,8 @@ int main(int argc, char *argv[])
     stl::read_stl(filepath_1, data->tri_soup);
     stl::read_stl(filepath_2, data->tri_soup);
 
+    data->intersections.reserve(data->tri_soup.size());
+
     RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
     unsigned int geomID = rtcAttachGeometry(scene, geom);
     rtcSetGeometryUserPrimitiveCount(geom, data->tri_soup.size());
