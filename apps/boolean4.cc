@@ -8,9 +8,12 @@
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Triangulation_2.h>
 #include <CGAL/Triangulation_vertex_base_with_info_2.h>
+
 // Use exact predicates and constructions to avoid precondition exception (degenerate edges being generated while intersecting triangles)
 // Also for better precision and handling coplanar cases
-typedef CGAL::Exact_predicates_exact_constructions_kernel K;
+// typedef CGAL::Exact_predicates_exact_constructions_kernel K;
+
+typedef CGAL::Simple_cartesian<double> K; // Faster but misses intersections
 typedef K::Point_3 Point;
 typedef K::Triangle_3 Triangle;
 typedef K::Segment_3 Segment;
@@ -22,7 +25,16 @@ typedef K::Vector_3 Vector;
 
 using namespace mp::io;
 
-bool intersect_triangle_triangle(const std::vector<stl::Triangle> &tri_soup, unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1)
+static Triangle to_cgal_triangle(const stl::Triangle &t)
+{
+    return {
+        {t.v1[0], t.v1[1], t.v1[2]},
+        {t.v2[0], t.v2[1], t.v2[2]},
+        {t.v3[0], t.v3[1], t.v3[2]},
+    };
+}
+
+static bool intersect_triangle_triangle(const std::vector<stl::Triangle> &tri_soup, unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1)
 {
     if (primID0 == primID1)
     {
@@ -31,16 +43,7 @@ bool intersect_triangle_triangle(const std::vector<stl::Triangle> &tri_soup, uns
 
     const stl::Triangle &t1 = tri_soup[primID0];
     const stl::Triangle &t2 = tri_soup[primID1];
-    Triangle cgal_t1, cgal_t2;
-    for (int i = 0; i < 3; i++)
-    {
-        for (int j = 0; j < 3; j++)
-        {
-            cgal_t1.vertex(i)[j] = t1.verts[i][j];
-            cgal_t2.vertex(i)[j] = t2.verts[i][j];
-        }
-    }
-    return CGAL::do_intersect(cgal_t1, cgal_t2);
+    return CGAL::do_intersect(to_cgal_triangle(t1), to_cgal_triangle(t2));
 }
 
 static void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned int num_collisions)
