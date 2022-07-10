@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
             {
                 for (int z = std::ceil(t_bb_min.z / grid_step); z < std::ceil(t_bb_max.z / grid_step); z++)
                 {
-                    int cell_index = x + y * num_y + z * (num_x * num_y);
+                    int cell_index = x + y * num_x + z * (num_x * num_y);
                     cells[cell_index].push_back(i);
                 }
             }
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
             {
                 for (int z = std::ceil(t_bb_min.z / grid_step); z < std::ceil(t_bb_max.z / grid_step); z++)
                 {
-                    int cell_index = x + y * num_y + z * (num_x * num_y);
+                    int cell_index = x + y * num_x + z * (num_x * num_y);
                     for (const auto &neighbour_tri_index : cells[cell_index])
                     {
                         if (i != neighbour_tri_index)
