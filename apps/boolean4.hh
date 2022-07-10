@@ -1,5 +1,8 @@
 #pragma once
 
+// Fixes CGAL assert when running debug build under valgrind
+#define CGAL_DISABLE_ROUNDING_MATH_CHECK
+
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
 #define likely(expr) (expr)
 #define unlikely(expr) (expr)
@@ -22,7 +25,8 @@
 
 // Use exact predicates and constructions to avoid precondition exception (degenerate edges being generated while intersecting triangles)
 // Also for better precision and handling coplanar cases
-typedef CGAL::Exact_predicates_exact_constructions_kernel K;
+// typedef CGAL::Exact_predicates_exact_constructions_kernel K;
+typedef CGAL::Simple_cartesian<double> K;
 typedef K::Triangle_3 Triangle;
 
 using namespace mp::io;
@@ -62,6 +66,8 @@ inline bool intersect_triangle_triangle(const std::vector<stl::Triangle> &tri_so
 
     const stl::Triangle &t1 = tri_soup[primID0];
     const stl::Triangle &t2 = tri_soup[primID1];
+    // Profiling and benchmarking showed that this is the true bottleneck of the program
+    // if only we can have an ultra fast intersection test
     return CGAL::do_intersect(to_cgal_triangle(t1), to_cgal_triangle(t2));
 }
 
