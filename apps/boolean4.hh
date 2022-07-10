@@ -34,6 +34,46 @@ struct Data
     std::vector<stl::Triangle> tri_soup;
 };
 
+inline Triangle to_cgal_triangle(const stl::Triangle &t)
+{
+    return {
+        {t.v1[0], t.v1[1], t.v1[2]},
+        {t.v2[0], t.v2[1], t.v2[2]},
+        {t.v3[0], t.v3[1], t.v3[2]},
+    };
+}
+
+inline bool intersect_triangle_triangle(const std::vector<stl::Triangle> &tri_soup, unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1)
+{
+    if (primID0 == primID1)
+    {
+        return false;
+    }
+
+    const stl::Triangle &t1 = tri_soup[primID0];
+    const stl::Triangle &t2 = tri_soup[primID1];
+    return CGAL::do_intersect(to_cgal_triangle(t1), to_cgal_triangle(t2));
+}
+
+inline void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned int num_collisions)
+{
+    for (size_t i = 0; i < num_collisions;)
+    {
+        bool intersect = intersect_triangle_triangle(((Data *)user_data_ptr)->tri_soup,
+                                                     collisions[i].geomID0, collisions[i].primID0,
+                                                     collisions[i].geomID1, collisions[i].primID1);
+        if (intersect)
+            i++;
+        else
+            collisions[i] = collisions[--num_collisions];
+    }
+
+    if (num_collisions == 0)
+        return;
+
+    // TODO: collect intersections
+}
+
 void triangle_bounds_func(const struct RTCBoundsFunctionArguments *args)
 {
     void *ptr = args->geometryUserPtr;
