@@ -3,25 +3,43 @@
 #include <limits>
 #include <execution>
 #include <iostream>
+#include <unordered_set>
 
 #include "stl_io.hh"
 #include "vec3.hh"
 #include "timers.hh"
+#include "boolean5.hh"
 
 using namespace mp::io;
-
-#include <CGAL/AABB_tree.h>
-#include <CGAL/AABB_traits.h>
-#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
-#include <CGAL/Triangulation_2.h>
-#include <CGAL/Triangulation_vertex_base_with_info_2.h>
-
-typedef CGAL::Simple_cartesian<double> K;
-typedef K::Triangle_3 Triangle;
 
 struct IntersectionPair
 {
     int t1_index, t2_index;
+    IntersectionPair(int t1_index_i, int t2_index_i)
+    {
+        t1_index = t1_index_i;
+        t2_index = t2_index_i;
+        if (t1_index > t2_index)
+        {
+            std::swap(t1_index, t2_index);
+        }
+    }
+};
+
+bool operator==(const IntersectionPair &lhs, const IntersectionPair &rhs)
+{
+    return lhs.t1_index == rhs.t1_index && lhs.t2_index == rhs.t2_index;
+}
+
+template <>
+struct std::hash<IntersectionPair>
+{
+    std::size_t operator()(IntersectionPair const &p) const noexcept
+    {
+        std::size_t h1 = std::hash<int>{}(p.t1_index);
+        std::size_t h2 = std::hash<int>{}(p.t2_index);
+        return h1 ^ (h2 << 1); // or use boost::hash_combine
+    }
 };
 
 static inline Triangle to_cgal_triangle(const stl::Triangle &t)
@@ -106,7 +124,7 @@ int main(int argc, char *argv[])
     }
     timer.tock("Second Pass");
 
-    std::vector<IntersectionPair> interescetions;
+    std::unordered_set<IntersectionPair> interescetions;
     interescetions.reserve(tri_soup.size());
 
     timer.tick();
@@ -133,7 +151,7 @@ int main(int argc, char *argv[])
                         {
                             if (CGAL::do_intersect(to_cgal_triangle(t), to_cgal_triangle(tri_soup[neighbour_tri_index])))
                             {
-                                interescetions.push_back({i, neighbour_tri_index});
+                                interescetions.insert({i, neighbour_tri_index});
                             }
                         }
                     }
@@ -143,9 +161,20 @@ int main(int argc, char *argv[])
     }
     timer.tock("Third Pass");
 
+    std::vector<Point> intersection_points;
+    intersection_points.reserve(interescetions.size());
+
+    timer.tick();
+    for (const auto &ip : interescetions)
+    {
+        cgal_tri_tri_intersection_points(intersection_points, to_cgal_triangle(tri_soup[ip.t1_index]), to_cgal_triangle(tri_soup[ip.t2_index]));
+    }
+    timer.tock("Fourth Pass");
+
     std::cout << "Avg. Triangle BB = " << bb_dims_avg << std::endl;
     std::cout << "Mesh Bounding Box: Max(" << bb_max << "), Min(" << bb_min << ")" << std::endl;
     std::cout << "Cells Size " << cells.size() << std::endl;
     std::cout << "Intersection Size " << interescetions.size() << std::endl;
+    std::cout << "Intersection Points Size " << intersection_points.size() << std::endl;
     return 0;
 }
