@@ -49,6 +49,8 @@ int main(int argc, char *argv[])
     rtcCollide(scene, scene, collide_func, data_ptr);
     timer.tock("rtcCollide");
 
+    std::cout << data_ptr->intersections_num << std::endl;
+
     rtcReleaseScene(scene);
     rtcReleaseDevice(device);
     delete data_ptr;

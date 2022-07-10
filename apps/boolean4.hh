@@ -13,6 +13,7 @@
 
 #include <embree3/rtcore.h>
 #include <vector>
+#include <mutex>
 
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
@@ -46,6 +47,8 @@ struct BBox3fa
 struct Data
 {
     std::vector<stl::Triangle> tri_soup;
+    std::mutex mutex;
+    size_t intersections_num = 0;
 };
 
 inline Triangle to_cgal_triangle(const stl::Triangle &t)
@@ -73,9 +76,10 @@ inline bool intersect_triangle_triangle(const std::vector<stl::Triangle> &tri_so
 
 inline void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned int num_collisions)
 {
+    Data *data_ptr = (Data *)user_data_ptr;
     for (size_t i = 0; i < num_collisions;)
     {
-        bool intersect = intersect_triangle_triangle(((Data *)user_data_ptr)->tri_soup,
+        bool intersect = intersect_triangle_triangle(data_ptr->tri_soup,
                                                      collisions[i].geomID0, collisions[i].primID0,
                                                      collisions[i].geomID1, collisions[i].primID1);
         if (intersect)
@@ -88,6 +92,10 @@ inline void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned
         return;
 
     // TODO: collect intersections
+    {
+        std::scoped_lock lock(data_ptr->mutex);
+        data_ptr->intersections_num += 1;
+    }
 }
 
 void triangle_bounds_func(const struct RTCBoundsFunctionArguments *args)
