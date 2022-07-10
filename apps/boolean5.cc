@@ -4,6 +4,7 @@
 #include <execution>
 #include <iostream>
 #include <unordered_set>
+#include <fstream>
 
 #include "stl_io.hh"
 #include "vec3.hh"
@@ -170,6 +171,14 @@ int main(int argc, char *argv[])
         cgal_tri_tri_intersection_points(intersection_points, to_cgal_triangle(tri_soup[ip.t1_index]), to_cgal_triangle(tri_soup[ip.t2_index]));
     }
     timer.tock("Fourth Pass");
+
+    std::ofstream file("foo.pts", std::ios::binary);
+    for (const auto &ip : intersection_points)
+    {
+        file.write(reinterpret_cast<const char *>(&ip.x()), sizeof(double));
+        file.write(reinterpret_cast<const char *>(&ip.y()), sizeof(double));
+        file.write(reinterpret_cast<const char *>(&ip.z()), sizeof(double));
+    }
 
     std::cout << "Avg. Triangle BB = " << bb_dims_avg << std::endl;
     std::cout << "Mesh Bounding Box: Max(" << bb_max << "), Min(" << bb_min << ")" << std::endl;
