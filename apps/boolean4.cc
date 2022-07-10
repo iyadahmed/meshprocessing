@@ -17,14 +17,10 @@ typedef K::Segment_3 Segment;
 typedef K::Vector_3 Vector;
 
 #include "stl_io.hh"
+#include "boolean4.hh"
+#include "timers.hh"
 
 using namespace mp::io;
-
-/* Self-intersection data */
-struct Data
-{
-    std::vector<stl::Triangle> tri_soup;
-};
 
 bool intersect_triangle_triangle(const std::vector<stl::Triangle> &tri_soup, unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1)
 {
@@ -86,60 +82,13 @@ int main(int argc, char *argv[])
     stl::read_stl(filepath_1, data_ptr->tri_soup);
     stl::read_stl(filepath_2, data_ptr->tri_soup);
 
-    // TODO: use user defined geometry as rtcCollide only works with that
-    RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
-    float *vertices = (float *)rtcSetNewGeometryBuffer(geom,
-                                                       RTC_BUFFER_TYPE_VERTEX,
-                                                       0,
-                                                       RTC_FORMAT_FLOAT3,
-                                                       3 * sizeof(float),
-                                                       data_ptr->tri_soup.size() * 3);
-
-    unsigned *indices = (unsigned *)rtcSetNewGeometryBuffer(geom,
-                                                            RTC_BUFFER_TYPE_INDEX,
-                                                            0,
-                                                            RTC_FORMAT_UINT3,
-                                                            3 * sizeof(unsigned),
-                                                            data_ptr->tri_soup.size());
-
-    if (!(vertices && indices))
-    {
-        std::cerr << "Failed to create Embree geometry." << std::endl;
-        return 1;
-    }
-
-    int vi = 0;
-    int ii = 0;
-    for (const auto &t : data_ptr->tri_soup)
-    {
-        for (int i = 0; i < 3; i++)
-        {
-            for (int j = 0; j < 3; j++)
-            {
-                vertices[vi] = t.verts[i][j];
-                vi += 1;
-            }
-            indices[ii] = ii;
-            ii += 1;
-        }
-    }
-
-    /*
-     * You must commit geometry objects when you are done setting them up,
-     * or you will not get any intersections.
-     */
+    RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
+    unsigned int geomID = rtcAttachGeometry(scene, geom);
+    rtcSetGeometryUserPrimitiveCount(geom, data_ptr->tri_soup.size());
+    rtcSetGeometryUserData(geom, data_ptr);
+    rtcSetGeometryBoundsFunction(geom, triangle_bounds_func, nullptr);
+    rtcSetGeometryIntersectFunction(geom, triangle_intersect_func);
     rtcCommitGeometry(geom);
-
-    /*
-     * In rtcAttachGeometry(...), the scene takes ownership of the geom
-     * by increasing its reference count. This means that we don't have
-     * to hold on to the geom handle, and may release it. The geom object
-     * will be released automatically when the scene is destroyed.
-     *
-     * rtcAttachGeometry() returns a geometry ID. We could use this to
-     * identify intersected objects later on.
-     */
-    rtcAttachGeometry(scene, geom);
     rtcReleaseGeometry(geom);
 
     /*
@@ -149,7 +98,9 @@ int main(int argc, char *argv[])
     rtcCommitScene(scene);
 
     // Perform self intersection
+    Timer timer;
     rtcCollide(scene, scene, collide_func, data_ptr);
+    timer.tock("rtcCollide");
 
     rtcReleaseScene(scene);
     rtcReleaseDevice(device);
