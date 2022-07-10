@@ -76,10 +76,10 @@ inline bool intersect_triangle_triangle(const std::vector<stl::Triangle> &tri_so
 
 inline void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned int num_collisions)
 {
-    Data *data_ptr = (Data *)user_data_ptr;
+    Data *data = (Data *)user_data_ptr;
     for (size_t i = 0; i < num_collisions;)
     {
-        bool intersect = intersect_triangle_triangle(data_ptr->tri_soup,
+        bool intersect = intersect_triangle_triangle(data->tri_soup,
                                                      collisions[i].geomID0, collisions[i].primID0,
                                                      collisions[i].geomID1, collisions[i].primID1);
         if (intersect)
@@ -93,16 +93,15 @@ inline void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned
 
     // TODO: collect intersections
     {
-        std::scoped_lock lock(data_ptr->mutex);
-        data_ptr->intersections_num += 1;
+        std::scoped_lock lock(data->mutex);
+        data->intersections_num += 1;
     }
 }
 
 void triangle_bounds_func(const struct RTCBoundsFunctionArguments *args)
 {
-    void *ptr = args->geometryUserPtr;
-    const std::vector<stl::Triangle> &tri_soup = ((Data *)ptr)->tri_soup;
-    const stl::Triangle &t = tri_soup[args->primID];
+    Data *data = (Data *)args->geometryUserPtr;
+    const stl::Triangle &t = data->tri_soup[args->primID];
 
     BBox3fa bounds{};
     for (int i = 0; i < 3; i++)

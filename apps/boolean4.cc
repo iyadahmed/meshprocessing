@@ -24,15 +24,15 @@ int main(int argc, char *argv[])
     RTCScene scene = rtcNewScene(device);
 
     // Data MUST be allocated on heap to be shared between threads
-    Data *data_ptr = new Data{};
+    Data *data = new Data{};
 
-    stl::read_stl(filepath_1, data_ptr->tri_soup);
-    stl::read_stl(filepath_2, data_ptr->tri_soup);
+    stl::read_stl(filepath_1, data->tri_soup);
+    stl::read_stl(filepath_2, data->tri_soup);
 
     RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
     unsigned int geomID = rtcAttachGeometry(scene, geom);
-    rtcSetGeometryUserPrimitiveCount(geom, data_ptr->tri_soup.size());
-    rtcSetGeometryUserData(geom, data_ptr);
+    rtcSetGeometryUserPrimitiveCount(geom, data->tri_soup.size());
+    rtcSetGeometryUserData(geom, data);
     rtcSetGeometryBoundsFunction(geom, triangle_bounds_func, nullptr);
     rtcSetGeometryIntersectFunction(geom, triangle_intersect_func);
     rtcCommitGeometry(geom);
@@ -46,14 +46,14 @@ int main(int argc, char *argv[])
 
     // Perform self intersection
     Timer timer;
-    rtcCollide(scene, scene, collide_func, data_ptr);
+    rtcCollide(scene, scene, collide_func, data);
     timer.tock("rtcCollide");
 
-    std::cout << data_ptr->intersections_num << std::endl;
+    std::cout << data->intersections_num << std::endl;
 
     rtcReleaseScene(scene);
     rtcReleaseDevice(device);
-    delete data_ptr;
+    delete data;
 
     return 0;
 }
