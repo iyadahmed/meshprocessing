@@ -3,22 +3,6 @@
 #include <iostream>
 #include <limits>
 
-#include <CGAL/AABB_tree.h>
-#include <CGAL/AABB_traits.h>
-#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
-#include <CGAL/Triangulation_2.h>
-#include <CGAL/Triangulation_vertex_base_with_info_2.h>
-
-// Use exact predicates and constructions to avoid precondition exception (degenerate edges being generated while intersecting triangles)
-// Also for better precision and handling coplanar cases
-typedef CGAL::Exact_predicates_exact_constructions_kernel K;
-
-// typedef CGAL::Simple_cartesian<double> K; // Faster but misses intersections
-typedef K::Point_3 Point;
-typedef K::Triangle_3 Triangle;
-typedef K::Segment_3 Segment;
-typedef K::Vector_3 Vector;
-
 #include "stl_io.hh"
 #include "boolean4.hh"
 #include "timers.hh"

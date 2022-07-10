@@ -1,14 +1,5 @@
 #pragma once
 
-#include <embree3/rtcore.h>
-// #include <embree3/rtcore_ray.h>
-#include <vector>
-
-#include "stl_io.hh"
-#include "vec3.hh"
-
-using namespace mp::io;
-
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
 #define likely(expr) (expr)
 #define unlikely(expr) (expr)
@@ -16,6 +7,25 @@ using namespace mp::io;
 #define likely(expr) __builtin_expect((bool)(expr), true)
 #define unlikely(expr) __builtin_expect((bool)(expr), false)
 #endif
+
+#include <embree3/rtcore.h>
+#include <vector>
+
+#include <CGAL/AABB_tree.h>
+#include <CGAL/AABB_traits.h>
+#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+#include <CGAL/Triangulation_2.h>
+#include <CGAL/Triangulation_vertex_base_with_info_2.h>
+
+#include "stl_io.hh"
+#include "vec3.hh"
+
+// Use exact predicates and constructions to avoid precondition exception (degenerate edges being generated while intersecting triangles)
+// Also for better precision and handling coplanar cases
+typedef CGAL::Exact_predicates_exact_constructions_kernel K;
+typedef K::Triangle_3 Triangle;
+
+using namespace mp::io;
 
 struct BBox3fa
 {
