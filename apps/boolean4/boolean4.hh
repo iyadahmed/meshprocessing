@@ -17,8 +17,9 @@
 
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
-#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+// #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/Simple_cartesian.h>
 #include <CGAL/Triangulation_2.h>
 #include <CGAL/Triangulation_vertex_base_with_info_2.h>
 
@@ -26,7 +27,7 @@
 #include "vec3.hh"
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
-// typedef CGAL::Simple_cartesian<double> K;
+// typedef CGAL::Simple_cartesian<float> K;
 typedef K::Triangle_3 Triangle;
 typedef K::Segment_3 Segment;
 typedef K::Point_3 Point;
@@ -150,11 +151,15 @@ inline void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned
                     if (auto intersection_point = boost::get<Point>(&(*result)))
                     {
                         data->intersection_points.push_back({geomID0, primID0, *intersection_point});
+                        data->intersection_points.push_back({geomID1, primID1, *intersection_point});
                     }
                     if (auto intersection_segment = boost::get<Segment>(&(*result)))
                     {
                         data->intersection_points.push_back({geomID0, primID0, intersection_segment->vertex(0)});
                         data->intersection_points.push_back({geomID0, primID0, intersection_segment->vertex(1)});
+
+                        data->intersection_points.push_back({geomID1, primID1, intersection_segment->vertex(0)});
+                        data->intersection_points.push_back({geomID1, primID1, intersection_segment->vertex(1)});
                     }
                 }
             }
