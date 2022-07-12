@@ -26,6 +26,10 @@ add_executable(boolean5 boolean5.cc boolean5.hh)
 target_compile_features(boolean5 PRIVATE cxx_std_17)
 target_link_libraries(boolean5 PRIVATE stl vec3 CGAL::CGAL OpenMP::OpenMP_CXX TBB::tbb)
 
+add_executable(bvh3 bvh3.cc)
+target_compile_features(boolean5 PRIVATE cxx_std_17)
+target_link_libraries(boolean5 PRIVATE stl vec3 bvh CGAL::CGAL OpenMP::OpenMP_CXX TBB::tbb)
+
 add_executable(minimal_embree_bvh_build minimal_embree_bvh_build.cc minimal_embree_bvh_build.hh)
 target_compile_features(minimal_embree_bvh_build PRIVATE cxx_std_17)
 target_link_libraries(minimal_embree_bvh_build PRIVATE stl vec3 embree3)
