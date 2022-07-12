@@ -1,3 +1,9 @@
+// Finds intersections via a uniform grid,
+// not memory efficient, but maybe very parallel friendly
+// after looking at some nvidia GPU bvh posts
+// I concoluded that it is better to go the BVH route indeed,
+// this is also by intuition since bvh is sortof an optimziation over this bounding box technique
+
 #include <vector>
 #include <cstdio>
 #include <limits>
