@@ -29,6 +29,7 @@
 // typedef CGAL::Exact_predicates_exact_constructions_kernel K;
 typedef CGAL::Simple_cartesian<double> K;
 typedef K::Triangle_3 Triangle;
+typedef K::Segment_3 Segment;
 
 using namespace mp::io;
 
@@ -70,6 +71,14 @@ inline Triangle to_cgal_triangle(const stl::Triangle &t)
     };
 }
 
+inline Segment to_cgal_segment(const Vec3 &a, const Vec3 &b)
+{
+    return {
+        {a.x, a.y, a.z},
+        {b.x, b.y, b.z},
+    };
+}
+
 inline bool do_intersect(const std::vector<stl::Triangle> &tri_soup, unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1)
 {
     if (primID0 == primID1)
@@ -79,9 +88,65 @@ inline bool do_intersect(const std::vector<stl::Triangle> &tri_soup, unsigned ge
 
     const stl::Triangle &t1 = tri_soup[primID0];
     const stl::Triangle &t2 = tri_soup[primID1];
+
+    Vec3 *verts1 = (Vec3 *)t1.verts;
+    Vec3 *verts2 = (Vec3 *)t2.verts;
+
+    float d1 = (verts1[0] - verts2[0]).length_squared();
+    for (int i = 1; i < 2; i++)
+    {
+        d1 = std::min(d1, (verts1[0] - verts2[i]).length_squared());
+    }
+
+    float d2 = (verts1[1] - verts2[0]).length_squared();
+    for (int i = 1; i < 2; i++)
+    {
+        d2 = std::min(d1, (verts1[1] - verts2[i]).length_squared());
+    }
+
+    float d3 = (verts1[2] - verts2[0]).length_squared();
+    for (int i = 1; i < 2; i++)
+    {
+        d3 = std::min(d1, (verts1[2] - verts2[i]).length_squared());
+    }
+
+    bool d1_close_to_0 = std::abs(d1) < .00001;
+    bool d2_close_to_0 = std::abs(d2) < .00001;
+    bool d3_close_to_0 = std::abs(d3) < .00001;
+
+    if (!(d1_close_to_0 && d2_close_to_0))
+    {
+        // Edge 1 is not part of t2
+        // TODO: implement our own segment/tri intersection predicate
+        if (CGAL::do_intersect(to_cgal_segment(verts1[0], verts1[1]), to_cgal_triangle(t2)))
+        {
+            return true;
+        }
+    }
+
+    if (!(d2_close_to_0 && d3_close_to_0))
+    {
+        // Edge 2 is not part of t2
+        if (CGAL::do_intersect(to_cgal_segment(verts1[1], verts1[2]), to_cgal_triangle(t2)))
+        {
+            return true;
+        }
+    }
+
+    if (!(d3_close_to_0 && d1_close_to_0))
+    {
+        // Edge 3 is not part of t2
+        if (CGAL::do_intersect(to_cgal_segment(verts1[2], verts1[0]), to_cgal_triangle(t2)))
+        {
+            return true;
+        }
+    }
+
+    return false;
+
     // Profiling and benchmarking showed that this is the true bottleneck of the program
     // if only we can have an ultra fast intersection test
-    return CGAL::do_intersect(to_cgal_triangle(t1), to_cgal_triangle(t2));
+    // return CGAL::do_intersect(to_cgal_triangle(t1), to_cgal_triangle(t2));
 }
 
 inline void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned int num_collisions)
