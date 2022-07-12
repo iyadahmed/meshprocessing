@@ -33,17 +33,6 @@ typedef K::Point_3 Point;
 
 using namespace mp::io;
 
-struct BBox3fa
-{
-    Vec3 upper = -std::numeric_limits<float>::infinity();
-    Vec3 lower = std::numeric_limits<float>::infinity();
-    void extend(const Vec3 &point)
-    {
-        lower.min(point);
-        upper.max(point);
-    }
-};
-
 struct GeometryPoint
 {
     unsigned geomID, primID;
@@ -52,6 +41,13 @@ struct GeometryPoint
 struct IntersectionPair
 {
     GeometryPoint a, b;
+};
+
+struct InputTriangle
+{
+    stl::Triangle t;
+    Segment segments[3];
+    Triangle t_cgal;
 };
 
 /* Self-intersection data */
@@ -115,22 +111,17 @@ inline bool do_intersect(const std::vector<stl::Triangle> &tri_soup, unsigned ge
     Vec3 *verts2 = (Vec3 *)t2.verts;
 
     float d1 = (verts1[0] - verts2[0]).length_squared();
+    float d2 = (verts1[1] - verts2[0]).length_squared();
+    float d3 = (verts1[2] - verts2[0]).length_squared();
+
     for (int i = 1; i < 2; i++)
     {
         d1 = std::min(d1, (verts1[0] - verts2[i]).length_squared());
-    }
-
-    float d2 = (verts1[1] - verts2[0]).length_squared();
-    for (int i = 1; i < 2; i++)
-    {
         d2 = std::min(d1, (verts1[1] - verts2[i]).length_squared());
-    }
-
-    float d3 = (verts1[2] - verts2[0]).length_squared();
-    for (int i = 1; i < 2; i++)
-    {
         d3 = std::min(d1, (verts1[2] - verts2[i]).length_squared());
     }
+
+    const Triangle &t2_cgal = to_cgal_triangle(t2);
 
     bool v1_on_t2 = std::abs(d1) < .00001;
     bool v2_on_t2 = std::abs(d2) < .00001;
@@ -140,7 +131,6 @@ inline bool do_intersect(const std::vector<stl::Triangle> &tri_soup, unsigned ge
     bool s2_on_t2 = (v2_on_t2 && v3_on_t2);
     bool s3_on_t2 = (v3_on_t2 && v1_on_t2);
 
-    const Triangle &t2_cgal = to_cgal_triangle(t2);
     const Segment &s1 = to_cgal_segment(verts1[0], verts1[1]);
     const Segment &s2 = to_cgal_segment(verts1[1], verts1[2]);
     const Segment &s3 = to_cgal_segment(verts1[2], verts1[0]);
@@ -234,19 +224,27 @@ inline void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned
 
     std::vector<Point> points;
     Data *data = (Data *)user_data_ptr;
+
     for (size_t i = 0; i < num_collisions; i++)
     {
+        const int &primID0 = collisions[i].primID0;
+        const int &primID1 = collisions[i].primID1;
+
+        const int &geomID0 = collisions[i].geomID0;
+        const int &geomID1 = collisions[i].geomID1;
+
         bool is_intersection = do_intersect(data->tri_soup,
-                                            collisions[i].geomID0, collisions[i].primID0,
-                                            collisions[i].geomID1, collisions[i].primID1);
+                                            geomID0, primID0,
+                                            geomID1, primID1);
 
         // TODO: get rid of duplicate cgal tri/segment conversion that is both-
         // -here and in #do_intersect
+        // Note I have tried getting rid of duplicated conversions
+        // to CGAL Segment and Triangle, but there was little gain
+        // I think because of inlining
 
         if (is_intersection)
         {
-            const int &primID0 = collisions[i].primID0;
-            const int &primID1 = collisions[i].primID1;
             const auto &t1 = data->tri_soup[primID0];
             const auto &t2 = data->tri_soup[primID1];
 
