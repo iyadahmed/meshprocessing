@@ -33,29 +33,18 @@ typedef K::Point_3 Point;
 
 using namespace mp::io;
 
-struct GeometryPoint
+/* Point of intersection alongside indices of the mesh and triangle it came from */
+struct IntersectionPoint
 {
     unsigned geomID, primID;
-};
-
-struct IntersectionPair
-{
-    GeometryPoint a, b;
-};
-
-struct InputTriangle
-{
-    stl::Triangle t;
-    Segment segments[3];
-    Triangle t_cgal;
+    Point p;
 };
 
 struct IntersectionData
 {
     std::mutex mutex;
     std::vector<stl::Triangle> tri_soup;
-    // std::vector<IntersectionPair> intersections_pairs;
-    std::vector<boost::optional<boost::variant<Point, Segment>>> intersections;
+    std::vector<IntersectionPoint> intersection_points;
 };
 
 inline Triangle to_cgal_triangle(const stl::Triangle &t)
@@ -96,171 +85,78 @@ inline Segment to_cgal_segment(const Vec3 &a, const Vec3 &b)
 //     return (a != b) && (c == d) && (d == e);
 // }
 
-inline bool do_intersect(const std::vector<stl::Triangle> &tri_soup, unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1)
-{
-    if (primID0 == primID1)
-    {
-        return false;
-    }
-
-    const stl::Triangle &t1 = tri_soup[primID0];
-    const stl::Triangle &t2 = tri_soup[primID1];
-
-    Vec3 *verts1 = (Vec3 *)t1.verts;
-    Vec3 *verts2 = (Vec3 *)t2.verts;
-
-    float d1 = (verts1[0] - verts2[0]).length_squared();
-    float d2 = (verts1[1] - verts2[0]).length_squared();
-    float d3 = (verts1[2] - verts2[0]).length_squared();
-
-    for (int i = 1; i < 2; i++)
-    {
-        d1 = std::min(d1, (verts1[0] - verts2[i]).length_squared());
-        d2 = std::min(d1, (verts1[1] - verts2[i]).length_squared());
-        d3 = std::min(d1, (verts1[2] - verts2[i]).length_squared());
-    }
-
-    const Triangle &t2_cgal = to_cgal_triangle(t2);
-
-    bool v1_on_t2 = std::abs(d1) < .00001;
-    bool v2_on_t2 = std::abs(d2) < .00001;
-    bool v3_on_t2 = std::abs(d3) < .00001;
-
-    bool s1_on_t2 = (v1_on_t2 && v2_on_t2);
-    bool s2_on_t2 = (v2_on_t2 && v3_on_t2);
-    bool s3_on_t2 = (v3_on_t2 && v1_on_t2);
-
-    const Segment &s1 = to_cgal_segment(verts1[0], verts1[1]);
-    const Segment &s2 = to_cgal_segment(verts1[1], verts1[2]);
-    const Segment &s3 = to_cgal_segment(verts1[2], verts1[0]);
-
-    if (!s1_on_t2)
-    {
-        if (CGAL::do_intersect(s1, t2_cgal))
-        {
-            return true;
-        }
-    }
-
-    if (!s2_on_t2)
-    {
-        if (CGAL::do_intersect(s2, t2_cgal))
-        {
-            return true;
-        }
-    }
-
-    if (!s3_on_t2)
-    {
-        if (CGAL::do_intersect(s3, t2_cgal))
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-static void cgal_tri_tri_intersection_points(std::vector<Point> &out, const Triangle &t1, const Triangle &t2)
-{
-    auto intersection_opt = CGAL::intersection(t1, t2);
-    if (!intersection_opt)
-    {
-        return;
-    }
-    auto intersection = &(*intersection_opt);
-    if (auto intersection_point = boost::get<Point>(intersection))
-    {
-        out.push_back(*intersection_point);
-        // auto v = *intersection_point;
-        // auto x = CGAL::scalar_product(v - CGAL::ORIGIN, basis_v1);
-        // auto y = CGAL::scalar_product(v - CGAL::ORIGIN, basis_v2);
-        // triangulation_input.push_back(std::make_pair(TriPoint(x, y), TriangulationPointInfo{v, bool_triangle.mesh_index}));
-    }
-    else if (auto intersection_segment = boost::get<Segment>(intersection))
-    {
-        for (int i = 0; i < 2; i++)
-        {
-            out.push_back(intersection_segment->vertex(i));
-            // auto v = intersection_segment->vertex(i);
-            // auto x = CGAL::scalar_product(v - CGAL::ORIGIN, basis_v1);
-            // auto y = CGAL::scalar_product(v - CGAL::ORIGIN, basis_v2);
-            // triangulation_input.push_back(std::make_pair(TriPoint(x, y), TriangulationPointInfo{v, bool_triangle.mesh_index}));
-        }
-    }
-    else if (auto intersection_triangle = boost::get<Triangle>(intersection))
-    {
-        for (int i = 0; i < 3; i++)
-        {
-            out.push_back(intersection_triangle->vertex(i));
-            // auto v = intersection_triangle->vertex(i);
-            // auto x = CGAL::scalar_product(v - CGAL::ORIGIN, basis_v1);
-            // auto y = CGAL::scalar_product(v - CGAL::ORIGIN, basis_v2);
-            // triangulation_input.push_back(std::make_pair(TriPoint(x, y), TriangulationPointInfo{v, bool_triangle.mesh_index}));
-        }
-    }
-    else if (auto intersection_polygon = boost::get<std::vector<Point>>(intersection))
-    {
-        for (auto const &v : *intersection_polygon)
-        {
-            out.push_back(v);
-            // auto x = CGAL::scalar_product(v - CGAL::ORIGIN, basis_v1);
-            // auto y = CGAL::scalar_product(v - CGAL::ORIGIN, basis_v2);
-            // triangulation_input.push_back(std::make_pair(TriPoint(x, y), TriangulationPointInfo{v, bool_triangle.mesh_index}));
-        }
-    }
-}
-
-// static void cgal_tri_tri_intersection_points(std::vector<Point> &out, const Triangle &t1, const Triangle &t2)
-// {
-
-// }
-
 inline void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned int num_collisions)
 {
     if (num_collisions == 0)
         return;
 
-    std::vector<Point> points;
     IntersectionData *data = (IntersectionData *)user_data_ptr;
 
     for (size_t i = 0; i < num_collisions; i++)
     {
-        const int &primID0 = collisions[i].primID0;
-        const int &primID1 = collisions[i].primID1;
+        const unsigned &primID0 = collisions[i].primID0;
+        const unsigned &primID1 = collisions[i].primID1;
 
-        const int &geomID0 = collisions[i].geomID0;
-        const int &geomID1 = collisions[i].geomID1;
+        const unsigned &geomID0 = collisions[i].geomID0;
+        const unsigned &geomID1 = collisions[i].geomID1;
 
-        bool is_intersection = do_intersect(data->tri_soup,
-                                            geomID0, primID0,
-                                            geomID1, primID1);
+        const stl::Triangle &t1 = data->tri_soup[primID0];
+        const stl::Triangle &t2 = data->tri_soup[primID1];
 
-        // TODO: get rid of duplicate cgal tri/segment conversion that is both-
-        // -here and in #do_intersect
-        // Note I have tried getting rid of duplicated conversions
-        // to CGAL Segment and Triangle, but there was little gain
-        // I think because of inlining
+        Vec3 *verts1 = (Vec3 *)t1.verts;
+        Vec3 *verts2 = (Vec3 *)t2.verts;
 
-        if (is_intersection)
+        float d1 = (verts1[0] - verts2[0]).length_squared();
+        float d2 = (verts1[1] - verts2[0]).length_squared();
+        float d3 = (verts1[2] - verts2[0]).length_squared();
+
+        for (int i = 1; i < 2; i++)
         {
-            const auto &t1 = data->tri_soup[primID0];
-            const auto &t2 = data->tri_soup[primID1];
+            d1 = std::min(d1, (verts1[0] - verts2[i]).length_squared());
+            d2 = std::min(d1, (verts1[1] - verts2[i]).length_squared());
+            d3 = std::min(d1, (verts1[2] - verts2[i]).length_squared());
+        }
 
-            Vec3 *verts1 = (Vec3 *)t1.verts;
-            const auto &t2_cgal = to_cgal_triangle(t2);
-            const Segment &s1 = to_cgal_segment(verts1[0], verts1[1]);
-            const Segment &s2 = to_cgal_segment(verts1[1], verts1[2]);
-            const Segment &s3 = to_cgal_segment(verts1[2], verts1[0]);
-            const auto &i1 = CGAL::intersection(s1, t2_cgal);
-            const auto &i2 = CGAL::intersection(s2, t2_cgal);
-            const auto &i3 = CGAL::intersection(s3, t2_cgal);
+        bool v1_supports_t2 = std::abs(d1) < .00001;
+        bool v2_supports_t2 = std::abs(d2) < .00001;
+        bool v3_supports_t2 = std::abs(d3) < .00001;
+
+        bool s_supports_t2[3];
+        s_supports_t2[0] = (v1_supports_t2 && v2_supports_t2);
+        s_supports_t2[1] = (v2_supports_t2 && v3_supports_t2);
+        s_supports_t2[2] = (v3_supports_t2 && v1_supports_t2);
+
+        const auto &t2_cgal = to_cgal_triangle(t2);
+        Segment segments[3];
+        segments[0] = to_cgal_segment(verts1[0], verts1[1]);
+        segments[1] = to_cgal_segment(verts1[1], verts1[2]);
+        segments[2] = to_cgal_segment(verts1[2], verts1[0]);
+        for (int j = 0; j < 3; j++)
+        {
+            if (s_supports_t2[j])
+            {
+                // Skip if segment belongs to triangle
+                continue;
+            }
+            if (!CGAL::do_intersect(segments[j], t2_cgal))
+            {
+                continue;
+            }
+            const auto &result = CGAL::intersection(segments[j], t2_cgal);
             {
                 std::scoped_lock lock(data->mutex);
-                data->intersections.push_back(i1);
-                data->intersections.push_back(i2);
-                data->intersections.push_back(i3);
-                // data->intersection_pairs.push_back({{collisions[i].geomID0, collisions[i].primID0}, {collisions[i].geomID1, collisions[i].primID1}});
+                if (result)
+                {
+                    if (auto intersection_point = boost::get<Point>(&(*result)))
+                    {
+                        data->intersection_points.push_back({geomID0, primID0, *intersection_point});
+                    }
+                    if (auto intersection_segment = boost::get<Segment>(&(*result)))
+                    {
+                        data->intersection_points.push_back({geomID0, primID0, intersection_segment->vertex(0)});
+                        data->intersection_points.push_back({geomID0, primID0, intersection_segment->vertex(1)});
+                    }
+                }
             }
         }
     }

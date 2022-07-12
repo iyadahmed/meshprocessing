@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
     stl::read_stl(filepath_1, data->tri_soup);
     stl::read_stl(filepath_2, data->tri_soup);
 
-    data->intersections.reserve(data->tri_soup.size());
+    data->intersection_points.reserve(data->tri_soup.size());
 
     RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
     unsigned int geomID = rtcAttachGeometry(scene, geom);
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
     rtcCollide(scene, scene, collide_func, data);
     timer.tock("rtcCollide");
 
-    std::cout << data->intersections.size() << std::endl;
+    std::cout << data->intersection_points.size() << std::endl;
 
     rtcReleaseScene(scene);
     rtcReleaseDevice(device);
