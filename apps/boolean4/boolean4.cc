@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
     RTCScene scene = rtcNewScene(device);
 
     // Data MUST be allocated on heap to be shared between threads
-    Data *data = new Data{};
+    IntersectionData *data = new IntersectionData{};
 
     stl::read_stl(filepath_1, data->tri_soup);
     stl::read_stl(filepath_2, data->tri_soup);

@@ -50,8 +50,7 @@ struct InputTriangle
     Triangle t_cgal;
 };
 
-/* Self-intersection data */
-struct Data
+struct IntersectionData
 {
     std::mutex mutex;
     std::vector<stl::Triangle> tri_soup;
@@ -223,7 +222,7 @@ inline void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned
         return;
 
     std::vector<Point> points;
-    Data *data = (Data *)user_data_ptr;
+    IntersectionData *data = (IntersectionData *)user_data_ptr;
 
     for (size_t i = 0; i < num_collisions; i++)
     {
@@ -269,7 +268,7 @@ inline void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned
 
 void triangle_bounds_func(const struct RTCBoundsFunctionArguments *args)
 {
-    Data *data = (Data *)args->geometryUserPtr;
+    IntersectionData *data = (IntersectionData *)args->geometryUserPtr;
     const stl::Triangle &t = data->tri_soup[args->primID];
 
     float &lower_x = args->bounds_o->lower_x;
@@ -305,7 +304,7 @@ void triangle_intersect_func(const RTCIntersectFunctionNArguments *args)
     RTCRay *ray = (RTCRay *)args->rayhit;
 
     void *ptr = args->geometryUserPtr;
-    const std::vector<stl::Triangle> &tri_soup = ((Data *)ptr)->tri_soup;
+    const std::vector<stl::Triangle> &tri_soup = ((IntersectionData *)ptr)->tri_soup;
     const stl::Triangle &tri = tri_soup[args->primID];
 
     Vec3 *verts = (Vec3 *)tri.verts;
