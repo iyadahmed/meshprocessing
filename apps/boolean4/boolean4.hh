@@ -140,8 +140,7 @@ inline bool do_intersect(const std::vector<stl::Triangle> &tri_soup, unsigned ge
     {
         // Edge 1 is not part of t2
         // TODO: implement our own segment/tri intersection predicate
-        // if (CGAL::do_intersect(to_cgal_segment(verts1[0], verts1[1]), to_cgal_triangle(t2)))
-        if (do_intersect_segment_tri(verts1[0], verts1[1], verts2[0], verts2[1], verts2[2]))
+        if (CGAL::do_intersect(to_cgal_segment(verts1[0], verts1[1]), to_cgal_triangle(t2)))
         {
             return true;
         }
@@ -150,9 +149,7 @@ inline bool do_intersect(const std::vector<stl::Triangle> &tri_soup, unsigned ge
     if (!(d2_close_to_0 && d3_close_to_0))
     {
         // Edge 2 is not part of t2
-        // if (CGAL::do_intersect(to_cgal_segment(verts1[1], verts1[2]), to_cgal_triangle(t2)))
-        if (do_intersect_segment_tri(verts1[1], verts1[2], verts2[0], verts2[1], verts2[2]))
-
+        if (CGAL::do_intersect(to_cgal_segment(verts1[1], verts1[2]), to_cgal_triangle(t2)))
         {
             return true;
         }
@@ -161,8 +158,7 @@ inline bool do_intersect(const std::vector<stl::Triangle> &tri_soup, unsigned ge
     if (!(d3_close_to_0 && d1_close_to_0))
     {
         // Edge 3 is not part of t2
-        // if (CGAL::do_intersect(to_cgal_segment(verts1[2], verts1[0]), to_cgal_triangle(t2)))
-        if (do_intersect_segment_tri(verts1[2], verts1[0], verts2[0], verts2[1], verts2[2]))
+        if (CGAL::do_intersect(to_cgal_segment(verts1[2], verts1[0]), to_cgal_triangle(t2)))
         {
             return true;
         }
@@ -199,19 +195,24 @@ void triangle_bounds_func(const struct RTCBoundsFunctionArguments *args)
     Data *data = (Data *)args->geometryUserPtr;
     const stl::Triangle &t = data->tri_soup[args->primID];
 
-    BBox3fa bounds{};
+    args->bounds_o->lower_x = INFINITY;
+    args->bounds_o->lower_y = INFINITY;
+    args->bounds_o->lower_z = INFINITY;
+
+    args->bounds_o->upper_x = -INFINITY;
+    args->bounds_o->upper_y = -INFINITY;
+    args->bounds_o->upper_z = -INFINITY;
+
     for (int i = 0; i < 3; i++)
     {
-        bounds.extend(t.verts[i]);
+        args->bounds_o->lower_x = std::min(args->bounds_o->lower_x, t.verts[i][0]);
+        args->bounds_o->lower_y = std::min(args->bounds_o->lower_y, t.verts[i][1]);
+        args->bounds_o->lower_z = std::min(args->bounds_o->lower_z, t.verts[i][2]);
+
+        args->bounds_o->upper_x = std::max(args->bounds_o->upper_x, t.verts[i][0]);
+        args->bounds_o->upper_y = std::max(args->bounds_o->upper_y, t.verts[i][1]);
+        args->bounds_o->upper_z = std::max(args->bounds_o->upper_z, t.verts[i][2]);
     }
-
-    args->bounds_o->lower_x = bounds.lower.x;
-    args->bounds_o->lower_y = bounds.lower.y;
-    args->bounds_o->lower_z = bounds.lower.z;
-
-    args->bounds_o->upper_x = bounds.upper.x;
-    args->bounds_o->upper_y = bounds.upper.y;
-    args->bounds_o->upper_z = bounds.upper.z;
 }
 
 void triangle_intersect_func(const RTCIntersectFunctionNArguments *args)
