@@ -79,6 +79,28 @@ inline Segment to_cgal_segment(const Vec3 &a, const Vec3 &b)
     };
 }
 
+inline bool is_tet_positive(const Vec3 &a, const Vec3 &b, const Vec3 &c, const Vec3 &d)
+{
+    return (a - d).dot((b - d).cross(c - d)) > 0;
+}
+
+// FIXME: wrong calculations
+inline bool do_intersect_segment_tri(const Vec3 &segment_a,
+                                     const Vec3 &segment_b,
+                                     const Vec3 &tri_a,
+                                     const Vec3 &tri_b,
+                                     const Vec3 &tri_c)
+{
+    bool a = is_tet_positive(segment_a, tri_a, tri_b, tri_c);
+    bool b = is_tet_positive(segment_b, tri_a, tri_b, tri_c);
+
+    bool c = is_tet_positive(segment_a, segment_b, tri_a, tri_b);
+    bool d = is_tet_positive(segment_b, segment_b, tri_b, tri_c);
+    bool e = is_tet_positive(segment_b, segment_b, tri_c, tri_a);
+
+    return (a != b) && (c == d) && (d == e);
+}
+
 inline bool do_intersect(const std::vector<stl::Triangle> &tri_soup, unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1)
 {
     if (primID0 == primID1)
@@ -118,7 +140,8 @@ inline bool do_intersect(const std::vector<stl::Triangle> &tri_soup, unsigned ge
     {
         // Edge 1 is not part of t2
         // TODO: implement our own segment/tri intersection predicate
-        if (CGAL::do_intersect(to_cgal_segment(verts1[0], verts1[1]), to_cgal_triangle(t2)))
+        // if (CGAL::do_intersect(to_cgal_segment(verts1[0], verts1[1]), to_cgal_triangle(t2)))
+        if (do_intersect_segment_tri(verts1[0], verts1[1], verts2[0], verts2[1], verts2[2]))
         {
             return true;
         }
@@ -127,7 +150,9 @@ inline bool do_intersect(const std::vector<stl::Triangle> &tri_soup, unsigned ge
     if (!(d2_close_to_0 && d3_close_to_0))
     {
         // Edge 2 is not part of t2
-        if (CGAL::do_intersect(to_cgal_segment(verts1[1], verts1[2]), to_cgal_triangle(t2)))
+        // if (CGAL::do_intersect(to_cgal_segment(verts1[1], verts1[2]), to_cgal_triangle(t2)))
+        if (do_intersect_segment_tri(verts1[1], verts1[2], verts2[0], verts2[1], verts2[2]))
+
         {
             return true;
         }
@@ -136,7 +161,8 @@ inline bool do_intersect(const std::vector<stl::Triangle> &tri_soup, unsigned ge
     if (!(d3_close_to_0 && d1_close_to_0))
     {
         // Edge 3 is not part of t2
-        if (CGAL::do_intersect(to_cgal_segment(verts1[2], verts1[0]), to_cgal_triangle(t2)))
+        // if (CGAL::do_intersect(to_cgal_segment(verts1[2], verts1[0]), to_cgal_triangle(t2)))
+        if (do_intersect_segment_tri(verts1[2], verts1[0], verts2[0], verts2[1], verts2[2]))
         {
             return true;
         }
@@ -203,14 +229,14 @@ void triangle_intersect_func(const RTCIntersectFunctionNArguments *args)
     auto &v2 = verts[2];
     auto e1 = v0 - v1;
     auto e2 = v2 - v0;
-    auto Ng = e1.cross(e2);
+    auto normal = e1.cross(e2);
 
     /* calculate denominator */
     auto O = Vec3(ray->org_x, ray->org_y, ray->org_z);
     auto D = Vec3(ray->dir_x, ray->dir_y, ray->dir_z);
     auto C = v0 - O;
     auto R = D.cross(C);
-    float den = Ng.dot(D);
+    float den = normal.dot(D);
     float rcpDen = 1.0f / den;
 
     /* perform edge tests */
@@ -218,12 +244,19 @@ void triangle_intersect_func(const RTCIntersectFunctionNArguments *args)
     float v = R.dot(e1) * rcpDen;
 
     /* perform backface culling */
+    // "likely" would be used here to hint the branch predictor
+    // If the use case is rendeing an image, then we use likely, as we assume most triangles
+    // are tiny on screen
+    // in other words it is likely for the ray to miss the triangle when rendering an image
+    // however, if the use case is collision detection
+    // then the BVH will yield to us the pairs of triangles that are likely to intersect
+    // and thus we use likely(valid) or unlikely(!valid) in collision detection use case
     bool valid = (den != 0.0f) & (u >= 0.0f) & (v >= 0.0f) & (u + v <= 1.0f);
     if (likely(!valid))
         return;
 
     /* perform depth test */
-    float t = Ng.dot(C) * rcpDen;
+    float t = normal.dot(C) * rcpDen;
     valid &= (t > ray->tnear) & (t < ray->tfar);
     if (likely(!valid))
         return;
