@@ -26,8 +26,8 @@
 
 // Use exact predicates and constructions to avoid precondition exception (degenerate edges being generated while intersecting triangles)
 // Also for better precision and handling coplanar cases
-// typedef CGAL::Exact_predicates_exact_constructions_kernel K;
-typedef CGAL::Simple_cartesian<double> K;
+typedef CGAL::Exact_predicates_exact_constructions_kernel K;
+// typedef CGAL::Simple_cartesian<double> K;
 typedef K::Triangle_3 Triangle;
 typedef K::Segment_3 Segment;
 
@@ -57,8 +57,8 @@ struct IntersectionPair
 /* Self-intersection data */
 struct Data
 {
-    std::vector<stl::Triangle> tri_soup;
     std::mutex mutex;
+    std::vector<stl::Triangle> tri_soup;
     std::vector<IntersectionPair> intersections;
 };
 
@@ -79,27 +79,26 @@ inline Segment to_cgal_segment(const Vec3 &a, const Vec3 &b)
     };
 }
 
-inline bool is_tet_positive(const Vec3 &a, const Vec3 &b, const Vec3 &c, const Vec3 &d)
-{
-    return (a - d).dot((b - d).cross(c - d)) > 0;
-}
+// inline bool is_tet_positive(const Vec3 &a, const Vec3 &b, const Vec3 &c, const Vec3 &d)
+// {
+//     return (a - d).dot((b - d).cross(c - d)) > 0;
+// }
 
-// FIXME: wrong calculations
-inline bool do_intersect_segment_tri(const Vec3 &segment_a,
-                                     const Vec3 &segment_b,
-                                     const Vec3 &tri_a,
-                                     const Vec3 &tri_b,
-                                     const Vec3 &tri_c)
-{
-    bool a = is_tet_positive(segment_a, tri_a, tri_b, tri_c);
-    bool b = is_tet_positive(segment_b, tri_a, tri_b, tri_c);
+// inline bool do_intersect_segment_tri(const Vec3 &segment_a,
+//                                      const Vec3 &segment_b,
+//                                      const Vec3 &tri_a,
+//                                      const Vec3 &tri_b,
+//                                      const Vec3 &tri_c)
+// {
+//     bool a = is_tet_positive(segment_a, tri_a, tri_b, tri_c);
+//     bool b = is_tet_positive(segment_b, tri_a, tri_b, tri_c);
 
-    bool c = is_tet_positive(segment_a, segment_b, tri_a, tri_b);
-    bool d = is_tet_positive(segment_b, segment_b, tri_b, tri_c);
-    bool e = is_tet_positive(segment_b, segment_b, tri_c, tri_a);
+//     bool c = is_tet_positive(segment_a, segment_b, tri_a, tri_b);
+//     bool d = is_tet_positive(segment_b, segment_b, tri_b, tri_c);
+//     bool e = is_tet_positive(segment_b, segment_b, tri_c, tri_a);
 
-    return (a != b) && (c == d) && (d == e);
-}
+//     return (a != b) && (c == d) && (d == e);
+// }
 
 inline bool do_intersect(const std::vector<stl::Triangle> &tri_soup, unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1)
 {
@@ -132,43 +131,44 @@ inline bool do_intersect(const std::vector<stl::Triangle> &tri_soup, unsigned ge
         d3 = std::min(d1, (verts1[2] - verts2[i]).length_squared());
     }
 
-    bool d1_close_to_0 = std::abs(d1) < .00001;
-    bool d2_close_to_0 = std::abs(d2) < .00001;
-    bool d3_close_to_0 = std::abs(d3) < .00001;
+    bool v1_on_t2 = std::abs(d1) < .00001;
+    bool v2_on_t2 = std::abs(d2) < .00001;
+    bool v3_on_t2 = std::abs(d3) < .00001;
 
-    if (!(d1_close_to_0 && d2_close_to_0))
+    bool s1_on_t2 = (v1_on_t2 && v2_on_t2);
+    bool s2_on_t2 = (v2_on_t2 && v3_on_t2);
+    bool s3_on_t2 = (v3_on_t2 && v1_on_t2);
+
+    const Triangle &t2_cgal = to_cgal_triangle(t2);
+    const Segment &s1 = to_cgal_segment(verts1[0], verts1[1]);
+    const Segment &s2 = to_cgal_segment(verts1[1], verts1[2]);
+    const Segment &s3 = to_cgal_segment(verts1[2], verts1[0]);
+
+    if (!s1_on_t2)
     {
-        // Edge 1 is not part of t2
-        // TODO: implement our own segment/tri intersection predicate
-        if (CGAL::do_intersect(to_cgal_segment(verts1[0], verts1[1]), to_cgal_triangle(t2)))
+        if (CGAL::do_intersect(s1, t2_cgal))
         {
             return true;
         }
     }
 
-    if (!(d2_close_to_0 && d3_close_to_0))
+    if (!s2_on_t2)
     {
-        // Edge 2 is not part of t2
-        if (CGAL::do_intersect(to_cgal_segment(verts1[1], verts1[2]), to_cgal_triangle(t2)))
+        if (CGAL::do_intersect(s2, t2_cgal))
         {
             return true;
         }
     }
 
-    if (!(d3_close_to_0 && d1_close_to_0))
+    if (!s3_on_t2)
     {
-        // Edge 3 is not part of t2
-        if (CGAL::do_intersect(to_cgal_segment(verts1[2], verts1[0]), to_cgal_triangle(t2)))
+        if (CGAL::do_intersect(s3, t2_cgal))
         {
             return true;
         }
     }
 
     return false;
-
-    // Profiling and benchmarking showed that this is the true bottleneck of the program
-    // if only we can have an ultra fast intersection test
-    // return CGAL::do_intersect(to_cgal_triangle(t1), to_cgal_triangle(t2));
 }
 
 inline void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned int num_collisions)
@@ -195,23 +195,31 @@ void triangle_bounds_func(const struct RTCBoundsFunctionArguments *args)
     Data *data = (Data *)args->geometryUserPtr;
     const stl::Triangle &t = data->tri_soup[args->primID];
 
-    args->bounds_o->lower_x = INFINITY;
-    args->bounds_o->lower_y = INFINITY;
-    args->bounds_o->lower_z = INFINITY;
+    float &lower_x = args->bounds_o->lower_x;
+    float &lower_y = args->bounds_o->lower_y;
+    float &lower_z = args->bounds_o->lower_z;
 
-    args->bounds_o->upper_x = -INFINITY;
-    args->bounds_o->upper_y = -INFINITY;
-    args->bounds_o->upper_z = -INFINITY;
+    float &upper_x = args->bounds_o->upper_x;
+    float &upper_y = args->bounds_o->upper_y;
+    float &upper_z = args->bounds_o->upper_z;
+
+    lower_x = INFINITY;
+    lower_y = INFINITY;
+    lower_z = INFINITY;
+
+    upper_x = -INFINITY;
+    upper_y = -INFINITY;
+    upper_z = -INFINITY;
 
     for (int i = 0; i < 3; i++)
     {
-        args->bounds_o->lower_x = std::min(args->bounds_o->lower_x, t.verts[i][0]);
-        args->bounds_o->lower_y = std::min(args->bounds_o->lower_y, t.verts[i][1]);
-        args->bounds_o->lower_z = std::min(args->bounds_o->lower_z, t.verts[i][2]);
+        lower_x = std::min(lower_x, t.verts[i][0]);
+        lower_y = std::min(lower_y, t.verts[i][1]);
+        lower_z = std::min(lower_z, t.verts[i][2]);
 
-        args->bounds_o->upper_x = std::max(args->bounds_o->upper_x, t.verts[i][0]);
-        args->bounds_o->upper_y = std::max(args->bounds_o->upper_y, t.verts[i][1]);
-        args->bounds_o->upper_z = std::max(args->bounds_o->upper_z, t.verts[i][2]);
+        upper_x = std::max(upper_x, t.verts[i][0]);
+        upper_y = std::max(upper_y, t.verts[i][1]);
+        upper_z = std::max(upper_z, t.verts[i][2]);
     }
 }
 
