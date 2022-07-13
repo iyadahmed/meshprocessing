@@ -46,7 +46,7 @@ static double calc_winding_number_parallelized(const Vec3 &query_point, const st
         return tet_solid_angle(query_point, t.v1, t.v2, t.v3);
     };
 
-    return std::transform_reduce(std::execution::par, tris.cbegin(), tris.cend(), 0.0f,
+    return std::transform_reduce(std::execution::par, tris.cbegin(), tris.cend(), 0.0,
                                  std::plus{},
                                  map_func);
 }

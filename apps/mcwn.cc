@@ -12,6 +12,9 @@
 #include <CGAL/AABB_traits.h>
 #include <CGAL/AABB_triangle_primitive.h>
 
+#define PI 3.14159265359
+
+
 typedef CGAL::Simple_cartesian<double> TreeK;
 
 typedef TreeK::Point_3 CGALPoint3;
@@ -84,7 +87,7 @@ static bool is_inside(const Tree &tree, const CGALPoint3 &query_point, float hol
     }
 
     hole_tolerance = std::clamp(hole_tolerance, 0.0f, 1.0f);
-    return (w >= ((1.0f - hole_tolerance) * 2.0 * M_PI)) || (n == 100);
+    return (w >= ((1.0f - hole_tolerance) * 2.0 * PI)) || (n == 100);
 }
 
 int main(int argc, char **argv)

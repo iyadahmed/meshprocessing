@@ -1,6 +1,7 @@
-find_package(TBB REQUIRED)
-find_package(CGAL REQUIRED)
+find_package(TBB CONFIG REQUIRED)
+find_package(CGAL CONFIG REQUIRED)
 find_package(OpenMP REQUIRED)
+find_package(embree 3 CONFIG REQUIRED)
 
 add_executable(stl_stats stl_stats.cc)
 target_compile_features(stl_stats PRIVATE cxx_std_17)
@@ -20,7 +21,7 @@ target_link_libraries(boolean3 PRIVATE stl CGAL::CGAL)
 
 add_executable(boolean4 boolean4/boolean4.cc boolean4/boolean4.hh)
 target_compile_features(boolean4 PRIVATE cxx_std_17)
-target_link_libraries(boolean4 PRIVATE stl vec3 CGAL::CGAL embree3)
+target_link_libraries(boolean4 PRIVATE stl vec3 CGAL::CGAL embree)
 
 add_executable(boolean5 boolean5.cc boolean5.hh)
 target_compile_features(boolean5 PRIVATE cxx_std_17)
@@ -33,7 +34,7 @@ target_link_libraries(bvh3 PRIVATE stl vec3 bvh CGAL::CGAL OpenMP::OpenMP_CXX TB
 
 add_executable(minimal_embree_bvh_build minimal_embree_bvh_build.cc minimal_embree_bvh_build.hh)
 target_compile_features(minimal_embree_bvh_build PRIVATE cxx_std_17)
-target_link_libraries(minimal_embree_bvh_build PRIVATE stl vec3 embree3)
+target_link_libraries(minimal_embree_bvh_build PRIVATE stl vec3 embree)
 
 add_executable(winding_numbers winding_numbers.cc)
 target_compile_features(winding_numbers PRIVATE cxx_std_17)
@@ -63,4 +64,4 @@ add_executable(mcpip_embree
     mcpip_embree/embree_scene.hh
 )
 target_compile_features(mcpip_embree PRIVATE cxx_std_17)
-target_link_libraries(mcpip_embree PRIVATE stl vec3 embree3 OpenMP::OpenMP_CXX)
+target_link_libraries(mcpip_embree PRIVATE stl vec3 embree OpenMP::OpenMP_CXX)
