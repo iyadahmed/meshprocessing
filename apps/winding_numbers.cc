@@ -9,6 +9,8 @@
 #include "stl_io.hh"
 #include "vec3.hh"
 
+#define PI 3.14159265359
+
 using namespace mp::io::stl;
 
 static double tet_solid_angle(const Vec3 &origin, Vec3 a, Vec3 b, Vec3 c)
@@ -51,12 +53,12 @@ static double calc_winding_number_parallelized(const Vec3 &query_point, const st
 
 static bool is_inside(const Vec3 &query_point, const std::vector<Triangle> &tris)
 {
-    return calc_winding_number(query_point, tris) >= (2.0 * M_PI);
+    return calc_winding_number(query_point, tris) >= (2.0 * PI);
 }
 
 static bool is_inside_parallelized(const Vec3 &query_point, const std::vector<Triangle> &tris)
 {
-    return calc_winding_number_parallelized(query_point, tris) >= (2.0 * M_PI);
+    return calc_winding_number_parallelized(query_point, tris) >= (2.0 * PI);
 }
 
 int main(int argc, char **argv)
