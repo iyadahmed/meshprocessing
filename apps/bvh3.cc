@@ -28,22 +28,22 @@ unsigned int morton3D(float x, float y, float z)
     return xx * 4 + yy * 2 + zz;
 }
 
-int findSplit(unsigned int *sortedMortonCodes,
+int findSplit(unsigned int *sorted_morton_codes,
               int first,
               int last)
 {
     // Identical Morton codes => split the range in the middle.
 
-    unsigned int firstCode = sortedMortonCodes[first];
-    unsigned int lastCode = sortedMortonCodes[last];
+    unsigned int first_code = sorted_morton_codes[first];
+    unsigned int last_code = sorted_morton_codes[last];
 
-    if (firstCode == lastCode)
+    if (first_code == last_code)
         return (first + last) >> 1;
 
     // Calculate the number of highest bits that are the same
     // for all objects, using the count-leading-zeros intrinsic.
 
-    int commonPrefix = __builtin_clz(firstCode ^ lastCode);
+    int common_prefix = __builtin_clz(first_code ^ last_code);
 
     // Use binary search to find where the next bit differs.
     // Specifically, we are looking for the highest object that
@@ -55,14 +55,14 @@ int findSplit(unsigned int *sortedMortonCodes,
     do
     {
         step = (step + 1) >> 1;      // exponential decrease
-        int newSplit = split + step; // proposed new position
+        int new_split = split + step; // proposed new position
 
-        if (newSplit < last)
+        if (new_split < last)
         {
-            unsigned int splitCode = sortedMortonCodes[newSplit];
-            int splitPrefix = __builtin_clz(firstCode ^ splitCode);
-            if (splitPrefix > commonPrefix)
-                split = newSplit; // accept proposal
+            unsigned int splitCode = sorted_morton_codes[new_split];
+            int split_prefix = __builtin_clz(first_code ^ splitCode);
+            if (split_prefix > common_prefix)
+                split = new_split; // accept proposal
         }
     } while (step > 1);
 
@@ -99,86 +99,7 @@ struct Node
 //                                       split + 1, last);
 //     return new InternalNode(childA, childB);
 // }
-
-/*
-Copyright (c) 2015-2016 Advanced Micro Devices, Inc. All rights reserved.
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-*/
-
-#include <hip/hip_runtime.h>
-#include <hip/hip_runtime_api.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <iostream>
-#include <string>
-#include <fstream>
-
-#define SAMPLE_VERSION "HIP-Examples-Application-v1.0"
-#define SUCCESS 0
-#define FAILURE 1
-
-using namespace std;
-
-__global__ void helloworld(char *in, char *out)
+int main(int, char**)
 {
-    int num = hipThreadIdx_x + hipBlockDim_x * hipBlockIdx_x;
-    out[num] = in[num] + 1;
-}
-
-int main(int argc, char *argv[])
-{
-    hipDeviceProp_t devProp;
-    hipGetDeviceProperties(&devProp, 0);
-    cout << " System minor " << devProp.minor << endl;
-    cout << " System major " << devProp.major << endl;
-    cout << " agent prop name " << devProp.name << endl;
-
-    /* Initial input,output for the host and create memory objects for the kernel*/
-    const char *input = "GdkknVnqkc";
-    size_t strlength = strlen(input);
-    cout << "input string:" << endl;
-    cout << input << endl;
-    char *output = (char *)malloc(strlength + 1);
-
-    char *inputBuffer;
-    char *outputBuffer;
-    hipMalloc((void **)&inputBuffer, (strlength + 1) * sizeof(char));
-    hipMalloc((void **)&outputBuffer, (strlength + 1) * sizeof(char));
-
-    hipMemcpy(inputBuffer, input, (strlength + 1) * sizeof(char), hipMemcpyHostToDevice);
-
-    hipLaunchKernelGGL(helloworld,
-                       dim3(1),
-                       dim3(strlength),
-                       0, 0,
-                       inputBuffer, outputBuffer);
-
-    hipMemcpy(output, outputBuffer, (strlength + 1) * sizeof(char), hipMemcpyDeviceToHost);
-
-    hipFree(inputBuffer);
-    hipFree(outputBuffer);
-
-    output[strlength] = '\0'; // Add the terminal character to the end of output.
-    cout << "\noutput string:" << endl;
-    cout << output << endl;
-
-    free(output);
-
-    std::cout << "Passed!\n";
-    return SUCCESS;
+    return 0;
 }

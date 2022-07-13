@@ -26,20 +26,8 @@ add_executable(boolean5 boolean5.cc boolean5.hh)
 target_compile_features(boolean5 PRIVATE cxx_std_17)
 target_link_libraries(boolean5 PRIVATE stl vec3 CGAL::CGAL OpenMP::OpenMP_CXX TBB::tbb)
 
-if(NOT DEFINED HIP_PATH)
-    if(NOT DEFINED ENV{HIP_PATH})
-        set(HIP_PATH "/opt/rocm/hip" CACHE PATH "Path to which HIP has been installed")
-    else()
-        set(HIP_PATH $ENV{HIP_PATH} CACHE PATH "Path to which HIP has been installed")
-    endif()
-endif()
 
-set(CMAKE_MODULE_PATH "${HIP_PATH}/cmake" ${CMAKE_MODULE_PATH})
-
-find_package(HIP REQUIRED)
-set_source_files_properties(bvh3.cc PROPERTIES HIP_SOURCE_PROPERTY_FORMAT 1)
-hip_add_executable(bvh3 bvh3.cc)
-set_property(TARGET bvh3 PROPERTY HIP_ARCHITECTURES r600)
+add_executable(bvh3 bvh3.cc)
 target_compile_features(bvh3 PRIVATE cxx_std_17)
 target_link_libraries(bvh3 PRIVATE stl vec3 bvh CGAL::CGAL OpenMP::OpenMP_CXX TBB::tbb)
 
