@@ -29,6 +29,11 @@ int main(int argc, char *argv[])
     stl::read_stl(filepath_1, data->tri_soup);
     stl::read_stl(filepath_2, data->tri_soup);
 
+    // TODO: 
+    // 1) deduplicate vertices and build topology from triangles
+    // 2) build two bvhs, one for edges, and one for triangles
+    // then overlap and intersect them
+
     data->intersection_points.reserve(data->tri_soup.size());
 
     RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
