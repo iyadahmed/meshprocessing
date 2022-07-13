@@ -68,14 +68,25 @@ int find_split(IDCodePair *sorted_id_code_pairs,
     return split;
 }
 
-Node *generate_hirearchy(IDCodePair *sorted_id_code_pairs,
+Node *generate_hirearchy(
+    Node *nodes,
+    IDCodePair *sorted_id_code_pairs,
                          int first,
-                         int last)
+                         int last,
+                         int num_used_nodes)
 {
+
     // Single object => create a leaf node.
 
     if (first == last)
-        return new LeafNode(sorted_id_code_pairs[first].triangle_id);
+    {
+        Node &node = nodes[num_used_nodes];
+        node.child_a = nullptr;
+        node.child_b = nullptr;
+        node.primitive_id = sorted_id_code_pairs[first].triangle_id;
+        num_used_nodes++;
+        return &node;
+    }
 
     // Determine where to split the range.
 
@@ -83,9 +94,14 @@ Node *generate_hirearchy(IDCodePair *sorted_id_code_pairs,
 
     // Process the resulting sub-ranges recursively.
 
-    Node *child_a = generate_hirearchy(sorted_id_code_pairs, first, split);
-    Node *child_b = generate_hirearchy(sorted_id_code_pairs, split + 1, last);
-    return new InternalNode(child_a, child_b);
+    Node *child_a = generate_hirearchy(nodes, sorted_id_code_pairs, first, split, num_used_nodes);
+    Node *child_b = generate_hirearchy(nodes, sorted_id_code_pairs, split + 1, last, num_used_nodes);
+
+    Node &internel_node = nodes[num_used_nodes];
+    internel_node.child_a = child_a;
+    internel_node.child_b = child_b;
+    num_used_nodes++;
+    return &internel_node;
 }
 
 int main(int argc, char** argv)
@@ -120,7 +136,8 @@ int main(int argc, char** argv)
     timer.tock("Sorting morton codes");
 
     timer.tick();
-    auto root_node = generate_hirearchy(morton_codes.data(), 0, morton_codes.size() - 1);
+    Node *nodes = new Node[2 * morton_codes.size() - 1];
+    auto root_node = generate_hirearchy(nodes, morton_codes.data(), 0, morton_codes.size() - 1, 0);
     timer.tock("Generating hirearchy");
 
     std::cout << tris.size() << std::endl;
