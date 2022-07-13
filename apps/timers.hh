@@ -8,7 +8,7 @@ class ScopedTimer
 {
 private:
     std::string m_message;
-    std::chrono::_V2::system_clock::time_point m_start_time;
+    std::chrono::time_point<std::chrono::high_resolution_clock> m_start_time;
 
 public:
     ScopedTimer(std::string message)
@@ -27,7 +27,7 @@ public:
 class Timer
 {
 private:
-    std::chrono::_V2::system_clock::time_point m_start_time;
+    std::chrono::time_point<std::chrono::high_resolution_clock> m_start_time;
 
 public:
     Timer()
