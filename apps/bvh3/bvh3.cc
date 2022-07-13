@@ -114,15 +114,16 @@ int main(int argc, char** argv)
     std::vector<stl::Triangle> tris;
     stl::read_stl(argv[1], tris);
 
-    std::vector<IDCodePair> morton_codes;
-    morton_codes.reserve(tris.size());
+    std::vector<IDCodePair> morton_codes(tris.size());
 
     Timer timer;
+    #pragma omp parallel for
     for (int i =0; i < tris.size(); i++)
     {
         Vec3 *verts = (Vec3 *)tris[i].verts;
         Vec3 c = verts[0] + verts[1] + verts[2];
-        morton_codes.push_back({i, morton3D(c.x, c.y, c.z)});
+        morton_codes[i].triangle_id = i;
+        morton_codes[i].morton_code = morton3D(c.x, c.y, c.z);
     }
     timer.tock("Calculating morton codes");
 
