@@ -28,7 +28,7 @@ target_compile_features(boolean5 PRIVATE cxx_std_17)
 target_link_libraries(boolean5 PRIVATE stl vec3 CGAL::CGAL OpenMP::OpenMP_CXX TBB::tbb)
 
 
-add_executable(bvh3 bvh3.cc)
+add_executable(bvh3 bvh3/bvh3.cc bvh3/bvh3.hh bvh3/morton_codes.hh)
 target_compile_features(bvh3 PRIVATE cxx_std_17)
 target_link_libraries(bvh3 PRIVATE stl vec3 bvh CGAL::CGAL OpenMP::OpenMP_CXX TBB::tbb)
 
