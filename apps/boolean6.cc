@@ -11,6 +11,7 @@
 #include <iostream>
 #include <unordered_set>
 #include <fstream>
+#include <cassert>
 
 #include "stl_io.hh"
 #include "vec3.hh"
@@ -81,6 +82,13 @@ static inline void calc_bounds(const stl::Triangle &t, Vec3 &min, Vec3 &max)
     }
 }
 
+
+// Convert voxel position to voxel linear array index
+int flat_index(int x, int y, int z, int num_x, int num_y, int num_z)
+{
+    return x + y * num_x + z * (num_x * num_y);
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 3)
@@ -118,8 +126,12 @@ int main(int argc, char *argv[])
     int num_y = std::ceil(bb_dims.y / grid_step);
     int num_z = std::ceil(bb_dims.z / grid_step);
 
+    assert(flat_index(num_x - 1, num_y - 1, num_z - 1, num_x, num_y, num_z) == (num_x * num_y * num_z - 1));
+
+
     std::vector<CellTriangleIndexPair> cells(tri_soup.size());
     std::vector<CTriangle> ctris(tri_soup.size());
+
 
     timer.tick();
     for (int i = 0; i < tri_soup.size(); i++)
@@ -128,7 +140,9 @@ int main(int argc, char *argv[])
         Vec3 t_bb_min, t_bb_max;
         calc_bounds(t, t_bb_min, t_bb_max);
 
-        // TODO: double check logic
+        // FIXME: double check logic
+        // floor should be used for lower bound
+        // but it causes the program to hang???
         int start_x = std::ceil((t_bb_min.x - bb_min.x) / grid_step);
         int start_y = std::ceil((t_bb_min.y - bb_min.y) / grid_step);
         int start_z = std::ceil((t_bb_min.z - bb_min.z) / grid_step);
@@ -145,6 +159,13 @@ int main(int argc, char *argv[])
         ctris[i].end_y = end_y;
         ctris[i].end_z = end_z;
 
+        assert(start_x >= 0);
+        assert(start_y >= 0);
+        assert(start_z >= 0);
+        assert(end_x >= 0);
+        assert(end_y >= 0);
+        assert(end_z >= 0);
+
         for (int x = start_x; x < end_x; x++)
         {
             for (int y = start_y; y < end_y; y++)
@@ -152,6 +173,7 @@ int main(int argc, char *argv[])
                 for (int z = start_z; z < end_z; z++)
                 {
                     int cell_index = x + y * num_x + z * (num_x * num_y);
+                    assert((cell_index >= 0) && (cell_index < cells.size()));
                     cells[i].triangle_index = i;
                     cells[i].cell_index = cell_index;
                 }
@@ -221,10 +243,10 @@ int main(int argc, char *argv[])
     intersection_points.reserve(interescetions.size());
 
     timer.tick();
-    for (const auto &ip : interescetions)
-    {
-        cgal_tri_tri_intersection_points(intersection_points, to_cgal_triangle(tri_soup[ip.t1_index]), to_cgal_triangle(tri_soup[ip.t2_index]));
-    }
+    // for (const auto &ip : interescetions)
+    // {
+    //     cgal_tri_tri_intersection_points(intersection_points, to_cgal_triangle(tri_soup[ip.t1_index]), to_cgal_triangle(tri_soup[ip.t2_index]));
+    // }
     timer.tock("Fourth Pass");
 
     std::ofstream file("foo.pts", std::ios::binary);
