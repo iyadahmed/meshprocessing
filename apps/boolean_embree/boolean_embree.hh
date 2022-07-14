@@ -13,6 +13,7 @@
 
 #include <embree3/rtcore.h>
 #include <vector>
+#include <unordered_map>
 #include <mutex>
 
 #include <CGAL/AABB_tree.h>
@@ -32,6 +33,15 @@ typedef K::Triangle_3 Triangle;
 typedef K::Segment_3 Segment;
 typedef K::Point_3 Point;
 
+struct TriangulationPointInfo
+{
+    Point point_3d;
+};
+
+typedef CGAL::Triangulation_vertex_base_with_info_2<TriangulationPointInfo, K> Vb;
+typedef CGAL::Triangulation_data_structure_2<Vb> Tds;
+typedef CGAL::Triangulation_2<K, Tds> Triangulation;
+
 using namespace mp::io;
 
 /* Point of intersection alongside indices of the mesh and triangle it came from */
@@ -46,7 +56,17 @@ struct IntersectionData
     std::mutex mutex;
     std::vector<stl::Triangle> tri_soup;
     std::vector<IntersectionPoint> intersection_points;
+    std::unordered_map<unsigned int, std::vector<IntersectionPoint>> intersection_points_map;
 };
+
+inline Triangulation::Point project_point(const Point &a, const Triangle &t)
+{
+    auto basis_v1 = t.vertex(1) - t.vertex(0);
+    auto basis_v2 = t.vertex(2) - t.vertex(0);
+    auto x = CGAL::scalar_product(a - CGAL::ORIGIN, basis_v1);
+    auto y = CGAL::scalar_product(a - CGAL::ORIGIN, basis_v2);
+    return {x, y};
+}
 
 inline Triangle to_cgal_triangle(const stl::Triangle &t)
 {
@@ -150,16 +170,24 @@ inline void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned
                 {
                     if (auto intersection_point = boost::get<Point>(&(*result)))
                     {
-                        data->intersection_points.push_back({geomID0, primID0, *intersection_point});
-                        data->intersection_points.push_back({geomID1, primID1, *intersection_point});
+                        // data->intersection_points.push_back({geomID0, primID0, *intersection_point});
+                        // data->intersection_points.push_back({geomID1, primID1, *intersection_point});
+                        data->intersection_points_map[primID0].push_back({geomID0, primID0, *intersection_point});
+                        data->intersection_points_map[primID1].push_back({geomID1, primID1, *intersection_point});
                     }
                     if (auto intersection_segment = boost::get<Segment>(&(*result)))
                     {
-                        data->intersection_points.push_back({geomID0, primID0, intersection_segment->vertex(0)});
-                        data->intersection_points.push_back({geomID0, primID0, intersection_segment->vertex(1)});
+                        // data->intersection_points.push_back({geomID0, primID0, intersection_segment->vertex(0)});
+                        // data->intersection_points.push_back({geomID0, primID0, intersection_segment->vertex(1)});
 
-                        data->intersection_points.push_back({geomID1, primID1, intersection_segment->vertex(0)});
-                        data->intersection_points.push_back({geomID1, primID1, intersection_segment->vertex(1)});
+                        // data->intersection_points.push_back({geomID1, primID1, intersection_segment->vertex(0)});
+                        // data->intersection_points.push_back({geomID1, primID1, intersection_segment->vertex(1)});
+
+                        data->intersection_points_map[primID0].push_back({geomID0, primID0, intersection_segment->vertex(0)});
+                        data->intersection_points_map[primID0].push_back({geomID0, primID0, intersection_segment->vertex(1)});
+
+                        data->intersection_points_map[primID1].push_back({geomID1, primID1, intersection_segment->vertex(0)});
+                        data->intersection_points_map[primID1].push_back({geomID1, primID1, intersection_segment->vertex(1)});
                     }
                 }
             }
