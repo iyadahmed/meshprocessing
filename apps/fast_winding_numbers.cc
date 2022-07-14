@@ -9,7 +9,6 @@
 #include <igl/bounding_box_diagonal.h>
 #include <igl/per_face_normals.h>
 #include <igl/copyleft/cgal/point_areas.h>
-#include <igl/opengl/glfw/Viewer.h>
 #include <igl/get_seconds.h>
 #include <iostream>
 #include <cstdlib>
