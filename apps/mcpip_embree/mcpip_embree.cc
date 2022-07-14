@@ -72,9 +72,9 @@ int main(int argc, char **argv)
     std::ofstream file(output_filepath, std::ios::binary);
 
     Vec3 bb_dims = bb_max - bb_min;
-    int num_x = static_cast<int>(bb_dims.x / grid_step);
-    int num_y = static_cast<int>(bb_dims.y / grid_step);
-    int num_z = static_cast<int>(bb_dims.z / grid_step);
+    int num_x = std::ceil(bb_dims.x / grid_step);
+    int num_y = std::ceil(bb_dims.y / grid_step);
+    int num_z = std::ceil(bb_dims.z / grid_step);
 
     int num_points = num_x * num_y * num_z;
     printf("Number of grid points before filtering = %d\n", num_points);
