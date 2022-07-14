@@ -19,9 +19,9 @@ add_executable(boolean3 boolean3.cc)
 target_compile_features(boolean3 PRIVATE cxx_std_17)
 target_link_libraries(boolean3 PRIVATE stl CGAL::CGAL)
 
-add_executable(boolean4 boolean4/boolean4.cc boolean4/boolean4.hh)
-target_compile_features(boolean4 PRIVATE cxx_std_17)
-target_link_libraries(boolean4 PRIVATE stl vec3 CGAL::CGAL embree)
+add_executable(boolean_embree boolean4/boolean_embree.cc boolean4/boolean_embree.hh)
+target_compile_features(boolean_embree PRIVATE cxx_std_17)
+target_link_libraries(boolean_embree PRIVATE stl vec3 CGAL::CGAL embree)
 
 add_executable(boolean5 boolean5.cc boolean5.hh)
 target_compile_features(boolean5 PRIVATE cxx_std_17)

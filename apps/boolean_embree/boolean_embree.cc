@@ -4,7 +4,7 @@
 #include <limits>
 
 #include "stl_io.hh"
-#include "boolean4.hh"
+#include "boolean_embree.hh"
 #include "../timers.hh"
 
 using namespace mp::io;
