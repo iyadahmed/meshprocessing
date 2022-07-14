@@ -28,19 +28,6 @@ static bool is_inside(const RTCScene &scene, const float &x, const float &y, con
     return (odd_intersections_num) >= (.5 * NUM_SPHERE_SAMPLES);
 }
 
-static bool is_inside_no_holes(const RTCScene &scene, const float &x, const float &y, const float &z)
-{
-    for (int i = 0; i < NUM_SPHERE_SAMPLES; i++)
-    {
-
-        if (!do_intersect(scene, x, y, z, SPHERE_SAMPLES[i][0], SPHERE_SAMPLES[i][1], SPHERE_SAMPLES[i][2]))
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
 int main(int argc, char **argv)
 {
     if (argc != 4)
