@@ -84,6 +84,20 @@ int flat_index(int x, int y, int z, int num_x, int num_y, int num_z)
     return x + y * num_x + z * (num_x * num_y);
 }
 
+struct int3
+{
+    int x, y, z;
+};
+
+static inline int3 jagged_index(int flat_index, int num_x, int num_y, int num_z)
+{
+    int z = flat_index / (num_x * num_y);
+    int x_p_y_t_num_x = flat_index - z * (num_x * num_y);
+    int y = x_p_y_t_num_x / num_x;
+    int x = x_p_y_t_num_x - (y * num_x);
+    return {x, y, z};
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 3)

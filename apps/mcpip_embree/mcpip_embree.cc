@@ -121,10 +121,6 @@ int main(int argc, char **argv)
     };
 
     Timer timer;
-    for (int i = 0; i < num_points;i++)
-    {
-        func_igl(i);
-    }
     igl::parallel_for(num_points, func_igl, 1000);
     timer.tock("Filtering points");
 
