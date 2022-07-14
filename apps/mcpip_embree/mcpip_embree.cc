@@ -20,17 +20,12 @@ using namespace mp::io::stl;
 static bool is_inside(const RTCScene &scene, const float &x, const float &y, const float &z)
 {
     int odd_intersections_num = 0;
-    int non_zero_intersections_num = 0;
     for (int i = 0; i < NUM_SPHERE_SAMPLES; i++)
     {
         int n = num_intersections(scene, x, y, z, SPHERE_SAMPLES[i][0], SPHERE_SAMPLES[i][1], SPHERE_SAMPLES[i][2]);
-        non_zero_intersections_num += (bool)n;
-        odd_intersections_num += (n & 1);
+        odd_intersections_num += (n & 1); // if odd add 1, if even add 0
     }
-
-    return (odd_intersections_num >= (.5 * float(non_zero_intersections_num)))
-
-           && (non_zero_intersections_num >= (.4 * NUM_SPHERE_SAMPLES));
+    return (odd_intersections_num) >= (.5 * NUM_SPHERE_SAMPLES);
 }
 
 static bool is_inside_no_holes(const RTCScene &scene, const float &x, const float &y, const float &z)
