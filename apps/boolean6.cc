@@ -112,13 +112,14 @@ int main(int argc, char *argv[])
     timer.tock("First Pass");
 
     // TODO: dynamic grid step?
-    float grid_step = .3;
+    float grid_step = 5;
     Vec3 bb_dims = bb_max - bb_min;
     int num_x = std::ceil(bb_dims.x / grid_step);
     int num_y = std::ceil(bb_dims.y / grid_step);
     int num_z = std::ceil(bb_dims.z / grid_step);
 
     std::vector<CellTriangleIndexPair> cells(tri_soup.size());
+    std::vector<CTriangle> ctris(tri_soup.size());
 
     timer.tick();
     for (int i = 0; i < tri_soup.size(); i++)
@@ -126,12 +127,29 @@ int main(int argc, char *argv[])
         const auto &t = tri_soup[i];
         Vec3 t_bb_min, t_bb_max;
         calc_bounds(t, t_bb_min, t_bb_max);
-        // TODO: store triangle start and end x, y, z
-        for (int x = std::ceil(t_bb_min.x / grid_step); x < std::ceil(t_bb_max.x / grid_step); x++)
+
+        // TODO: double check logic
+        int start_x = std::ceil((t_bb_min.x - bb_min.x) / grid_step);
+        int start_y = std::ceil((t_bb_min.y - bb_min.y) / grid_step);
+        int start_z = std::ceil((t_bb_min.z - bb_min.z) / grid_step);
+
+        int end_x = std::ceil((t_bb_max.x - bb_min.x) / grid_step);
+        int end_y = std::ceil((t_bb_max.y - bb_min.y) / grid_step);
+        int end_z = std::ceil((t_bb_max.z - bb_min.z) / grid_step);
+
+        ctris[i].start_x = start_x;
+        ctris[i].start_y = start_y;
+        ctris[i].start_z = start_z;
+
+        ctris[i].end_x = end_x;
+        ctris[i].end_y = end_y;
+        ctris[i].end_z = end_z;
+
+        for (int x = start_x; x < end_x; x++)
         {
-            for (int y = std::ceil(t_bb_min.y / grid_step); y < std::ceil(t_bb_max.y / grid_step); y++)
+            for (int y = start_y; y < end_y; y++)
             {
-                for (int z = std::ceil(t_bb_min.z / grid_step); z < std::ceil(t_bb_max.z / grid_step); z++)
+                for (int z = start_z; z < end_z; z++)
                 {
                     int cell_index = x + y * num_x + z * (num_x * num_y);
                     cells[i].triangle_index = i;
@@ -155,14 +173,20 @@ int main(int argc, char *argv[])
     for (int i = 0; i < tri_soup.size(); i++)
     {
         const auto &t = tri_soup[i];
-        Vec3 t_bb_min, t_bb_max;
-        calc_bounds(t, t_bb_min, t_bb_max);
-        // FIXME:: use floor for start x, y, z and ceil for end
-        for (int x = std::ceil(t_bb_min.x / grid_step); x < std::ceil(t_bb_max.x / grid_step); x++)
+
+        int start_x = ctris[i].start_x;
+        int start_y = ctris[i].start_y;
+        int start_z = ctris[i].start_z;
+
+        int end_x = ctris[i].end_x;
+        int end_y = ctris[i].end_y;
+        int end_z = ctris[i].end_z;
+
+        for (int x = start_x; x < end_x; x++)
         {
-            for (int y = std::ceil(t_bb_min.y / grid_step); y < std::ceil(t_bb_max.y / grid_step); y++)
+            for (int y = start_y; y < end_y; y++)
             {
-                for (int z = std::ceil(t_bb_min.z / grid_step); z < std::ceil(t_bb_max.z / grid_step); z++)
+                for (int z = start_z; z < end_z; z++)
                 {
                     int cell_index = x + y * num_x + z * (num_x * num_y);
                     auto lower = std::lower_bound(cells.begin(), cells.end(), cell_index, [](const CellTriangleIndexPair &pair, int value)

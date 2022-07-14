@@ -3,10 +3,12 @@
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+#include <CGAL/Simple_cartesian.h>
 #include <CGAL/Triangulation_2.h>
 #include <CGAL/Triangulation_vertex_base_with_info_2.h>
 
-typedef CGAL::Exact_predicates_exact_constructions_kernel K;
+// typedef CGAL::Exact_predicates_exact_constructions_kernel K;
+typedef CGAL::Simple_cartesian<float> K;
 typedef K::Triangle_3 Triangle;
 typedef K::Point_3 Point;
 typedef K::Segment_3 Segment;
