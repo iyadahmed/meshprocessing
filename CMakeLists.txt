@@ -23,6 +23,8 @@ endif()
 # option(TRACY_ENABLE "" ON)
 # option(TRACY_ON_DEMAND "" ON)
 # add_subdirectory(extern/tracy) # target: TracyClient or alias Tracy :: TracyClient
+# add_compile_definitions(TRACY_ENABLE)
+# add_compile_definitions(TRACY_NO_EXIT)
 
 add_subdirectory(src)
 add_subdirectory(apps)
