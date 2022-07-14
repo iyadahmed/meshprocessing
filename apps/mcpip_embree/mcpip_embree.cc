@@ -17,7 +17,7 @@
 
 using namespace mp::io::stl;
 
-static bool is_inside(const RTCScene &scene, const float &x, const float &y, const float &z)
+static bool is_inside(const RTCScene &scene, const float &x, const float &y, const float &z, const float &threshold)
 {
     int odd_intersections_num = 0;
     for (int i = 0; i < NUM_SPHERE_SAMPLES; i++)
@@ -25,28 +25,34 @@ static bool is_inside(const RTCScene &scene, const float &x, const float &y, con
         int n = num_intersections(scene, x, y, z, SPHERE_SAMPLES[i][0], SPHERE_SAMPLES[i][1], SPHERE_SAMPLES[i][2]);
         odd_intersections_num += (n & 1); // if odd add 1, if even add 0
     }
-    return (odd_intersections_num) >= (.5 * NUM_SPHERE_SAMPLES);
+    return (odd_intersections_num) >= (threshold * NUM_SPHERE_SAMPLES);
 }
 
 int main(int argc, char **argv)
 {
-    if (argc != 4)
+    if (argc != 5)
     {
         puts("Monte Carlo Point in Polygon 3D\n"
-             "Usage: mcpip grid_step input_filepath.stl output_filepath.pts\n"
+             "Usage: mcpip_embree input_filepath.stl output_filepath.pts grid_step threshold\n"
              "Generates points inside the volume of an oriented triangle soup by filtering bounding box grid points.\n"
-             "Outputs a binary file containing N * 3 doubles.");
+             "Outputs a binary file containing N * 3 floats.");
         return 1;
     }
 
-    float grid_step = atof(argv[1]);
+    char *input_filepath = argv[1];
+    char *output_filepath = argv[2];
+    float grid_step = atof(argv[3]);
     if (grid_step <= 0.0f)
     {
         puts("ERROR: Grid step must be a positive number.");
         return 1;
     }
-    char *input_filepath = argv[2];
-    char *output_filepath = argv[3];
+    float threshold = atof(argv[4]);
+    if ((threshold > 1.0f) || (threshold < 0.0f))
+    {
+        puts("ERROR: Threshold must be between 0.0 and 1.0 inclusive.");
+        return 1;
+    }
 
     std::vector<Triangle> tris;
     read_stl(input_filepath, tris);
@@ -90,7 +96,7 @@ int main(int argc, char **argv)
                 float x = i * grid_step + bb_min.x;
                 float y = j * grid_step + bb_min.y;
                 float z = k * grid_step + bb_min.z;
-                if (is_inside(scene, x, y, z))
+                if (is_inside(scene, x, y, z, threshold))
                 {
 #pragma omp critical
                     {
