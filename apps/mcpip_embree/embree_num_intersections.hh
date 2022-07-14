@@ -3,6 +3,11 @@
 #include <limits>
 #include <embree3/rtcore.h>
 
+void filter(const RTCFilterFunctionNArguments *args)
+{
+    // RTCHit *hit = (RTCHit *)args->hit;
+}
+
 int num_intersections(const RTCScene &scene, float ox, float oy, float oz,
                       float dx, float dy, float dz)
 {

@@ -4,6 +4,8 @@
 #include <fstream>
 #include <cstdio>
 #include <embree3/rtcore.h>
+#include <algorithm>
+#include <execution>
 
 #include "stl_io.hh"
 #include "vec3.hh"
@@ -74,9 +76,7 @@ int main(int argc, char **argv)
         }
     }
 
-    // Generate and filter grid points and write them to a file
-    std::ofstream file(output_filepath, std::ios::binary);
-
+    // Generate grid points filter them and write inside points to a file
     Vec3 bb_dims = bb_max - bb_min;
     int num_x = std::ceil(bb_dims.x / grid_step);
     int num_y = std::ceil(bb_dims.y / grid_step);
@@ -85,8 +85,8 @@ int main(int argc, char **argv)
     int num_points = num_x * num_y * num_z;
     printf("Number of grid points before filtering = %d\n", num_points);
 
-    Timer timer;
-#pragma omp parallel for collapse(3)
+    std::vector<std::pair<Vec3, bool>> points;
+    points.reserve(num_points);
     for (int i = 0; i < num_x; i++)
     {
         for (int j = 0; j < num_y; j++)
@@ -96,19 +96,28 @@ int main(int argc, char **argv)
                 float x = i * grid_step + bb_min.x;
                 float y = j * grid_step + bb_min.y;
                 float z = k * grid_step + bb_min.z;
-                if (is_inside(scene, x, y, z, threshold))
-                {
-#pragma omp critical
-                    {
-                        file.write(reinterpret_cast<const char *>(&x), sizeof(float));
-                        file.write(reinterpret_cast<const char *>(&y), sizeof(float));
-                        file.write(reinterpret_cast<const char *>(&z), sizeof(float));
-                    }
-                }
+                points.push_back(std::make_pair(Vec3{x, y, z}, false));
             }
         }
     }
+
+    auto func = [&](std::pair<Vec3, bool> &item)
+    { item.second = is_inside(scene, item.first.x, item.first.y, item.first.z, threshold); };
+
+    Timer timer;
+    std::for_each(std::execution::par_unseq, points.begin(), points.end(), func);
     timer.tock("Filtering points");
+
+    std::ofstream file(output_filepath, std::ios::binary);
+    for (const auto &p : points)
+    {
+        if (p.second)
+        {
+            file.write((char *)(&p.first.x), sizeof(float));
+            file.write((char *)(&p.first.y), sizeof(float));
+            file.write((char *)(&p.first.z), sizeof(float));
+        }
+    }
 
     rtcReleaseScene(scene);
     rtcReleaseDevice(device);
