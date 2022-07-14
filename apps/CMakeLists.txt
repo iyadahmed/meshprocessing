@@ -69,3 +69,7 @@ include(libigl)
 add_executable(fast_winding_numbers fast_winding_numbers.cc)
 target_compile_features(fast_winding_numbers PRIVATE cxx_std_17)
 target_link_libraries(fast_winding_numbers PRIVATE stl vec3 CGAL::CGAL OpenMP::OpenMP_CXX igl::core)
+
+add_executable(boolean6 boolean6.cc)
+target_compile_features(boolean6 PRIVATE cxx_std_17)
+target_link_libraries(boolean6 PRIVATE stl vec3 CGAL::CGAL OpenMP::OpenMP_CXX)
