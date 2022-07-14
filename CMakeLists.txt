@@ -17,5 +17,12 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     set(CMAKE_CXX_EXTENSIONS OFF) # Let's ensure -std=c++xx instead of -std=g++xx
 endif()
 
+# set options before add_subdirectory
+# available options: TRACY_ENABLE , TRACY_ON_DEMAND , TRACY_NO_BROADCAST ,
+# TRACY_NO_CODE_TRANSFER , ...
+# option(TRACY_ENABLE "" ON)
+# option(TRACY_ON_DEMAND "" ON)
+# add_subdirectory(extern/tracy) # target: TracyClient or alias Tracy :: TracyClient
+
 add_subdirectory(src)
 add_subdirectory(apps)
