@@ -117,7 +117,6 @@ int main(int argc, char** argv)
     std::vector<IDCodePair> morton_codes(tris.size());
 
     Timer timer;
-    #pragma omp parallel for
     for (int i =0; i < tris.size(); i++)
     {
         Vec3 *verts = (Vec3 *)tris[i].verts;
@@ -144,5 +143,7 @@ int main(int argc, char** argv)
     std::cout << tris.size() << std::endl;
     std::cout << morton_codes.size() << std::endl;
     std::cout << root_node << std::endl;
+
+    delete [] nodes;
     return 0;
 }
