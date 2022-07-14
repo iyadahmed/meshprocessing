@@ -1,7 +1,7 @@
 find_package(TBB CONFIG REQUIRED)
 find_package(CGAL CONFIG REQUIRED)
 find_package(OpenMP REQUIRED)
-find_package(embree 3 CONFIG REQUIRED)
+find_package(embree 3 REQUIRED)
 
 add_executable(stl_stats stl_stats.cc)
 target_compile_features(stl_stats PRIVATE cxx_std_17)
