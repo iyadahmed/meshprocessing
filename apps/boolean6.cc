@@ -10,6 +10,7 @@
 #include <execution>
 #include <iostream>
 #include <unordered_set>
+#include <unordered_map>
 #include <fstream>
 #include <cassert>
 
@@ -59,12 +60,7 @@ static inline Triangle to_cgal_triangle(const stl::Triangle &t)
     };
 }
 
-struct CellTriangleIndexPair
-{
-    int cell_index, triangle_index;
-};
-
-struct CTriangle
+struct IntBounds
 {
     int start_x, start_y, start_z;
     int end_x, end_y, end_z;
@@ -81,7 +77,6 @@ static inline void calc_bounds(const stl::Triangle &t, Vec3 &min, Vec3 &max)
         max.max(verts[i]);
     }
 }
-
 
 // Convert voxel position to voxel linear array index
 int flat_index(int x, int y, int z, int num_x, int num_y, int num_z)
@@ -128,10 +123,10 @@ int main(int argc, char *argv[])
 
     assert(flat_index(num_x - 1, num_y - 1, num_z - 1, num_x, num_y, num_z) == (num_x * num_y * num_z - 1));
 
+    std::vector<IntBounds> ctris(tri_soup.size());
 
-    std::vector<CellTriangleIndexPair> cells(tri_soup.size());
-    std::vector<CTriangle> ctris(tri_soup.size());
-
+    std::unordered_map<int, std::vector<int>> cells;
+    cells.reserve(tri_soup.size());
 
     timer.tick();
     for (int i = 0; i < tri_soup.size(); i++)
@@ -151,6 +146,13 @@ int main(int argc, char *argv[])
         int end_y = std::ceil((t_bb_max.y - bb_min.y) / grid_step);
         int end_z = std::ceil((t_bb_max.z - bb_min.z) / grid_step);
 
+        assert(start_x >= 0);
+        assert(start_y >= 0);
+        assert(start_z >= 0);
+        assert(end_x >= 0);
+        assert(end_y >= 0);
+        assert(end_z >= 0);
+
         ctris[i].start_x = start_x;
         ctris[i].start_y = start_y;
         ctris[i].start_z = start_z;
@@ -159,13 +161,6 @@ int main(int argc, char *argv[])
         ctris[i].end_y = end_y;
         ctris[i].end_z = end_z;
 
-        assert(start_x >= 0);
-        assert(start_y >= 0);
-        assert(start_z >= 0);
-        assert(end_x >= 0);
-        assert(end_y >= 0);
-        assert(end_z >= 0);
-
         for (int x = start_x; x < end_x; x++)
         {
             for (int y = start_y; y < end_y; y++)
@@ -173,20 +168,12 @@ int main(int argc, char *argv[])
                 for (int z = start_z; z < end_z; z++)
                 {
                     int cell_index = x + y * num_x + z * (num_x * num_y);
-                    assert((cell_index >= 0) && (cell_index < cells.size()));
-                    cells[i].triangle_index = i;
-                    cells[i].cell_index = cell_index;
+                    cells[cell_index].push_back(i);
                 }
             }
         }
     }
     timer.tock("Second Pass");
-
-    // Sort by cell index
-    timer.tick();
-    std::sort(cells.begin(), cells.end(), [](CellTriangleIndexPair &a, CellTriangleIndexPair &b)
-              { return a.cell_index < b.cell_index; });
-    timer.tock("Sorting");
 
     std::unordered_set<IntersectionPair> interescetions;
     interescetions.reserve(tri_soup.size());
@@ -211,26 +198,20 @@ int main(int argc, char *argv[])
                 for (int z = start_z; z < end_z; z++)
                 {
                     int cell_index = x + y * num_x + z * (num_x * num_y);
-                    auto lower = std::lower_bound(cells.begin(), cells.end(), cell_index, [](const CellTriangleIndexPair &pair, int value)
-                                                  { return pair.cell_index < value; });
-                    if (lower == cells.end())
+                    auto it = cells.find(cell_index);
+                    if (it == cells.end())
                     {
                         continue;
                     }
-                    for (auto it = lower; it < cells.end(); it++)
+                    for (const auto &other_triangle_index : it->second)
                     {
-                        if (it->cell_index != cell_index)
+                        if (i == other_triangle_index)
                         {
-                            break;
-                        }
-                        if (i == it->triangle_index)
-                        {
-                            // Skip same triangle
                             continue;
                         }
-                        if (CGAL::do_intersect(to_cgal_triangle(t), to_cgal_triangle(tri_soup[it->triangle_index])))
+                        if (CGAL::do_intersect(to_cgal_triangle(t), to_cgal_triangle(tri_soup[other_triangle_index])))
                         {
-                            interescetions.insert({i, it->triangle_index});
+                            interescetions.insert({i, other_triangle_index});
                         }
                     }
                 }
