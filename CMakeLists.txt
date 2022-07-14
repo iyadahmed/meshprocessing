@@ -10,6 +10,8 @@ project(
     LANGUAGES CXX
 )
 
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
 # Only do these if this is the main project, and not if it is included through add_subdirectory
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     set(CMAKE_CXX_EXTENSIONS OFF) # Let's ensure -std=c++xx instead of -std=g++xx
