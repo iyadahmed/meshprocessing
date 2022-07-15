@@ -1,3 +1,4 @@
+include(libigl)
 find_package(TBB CONFIG REQUIRED)
 find_package(CGAL CONFIG REQUIRED)
 find_package(OpenMP REQUIRED)
@@ -72,13 +73,10 @@ add_executable(mcpip_embree
 target_compile_features(mcpip_embree PRIVATE cxx_std_17)
 target_link_libraries(mcpip_embree PRIVATE stl vec3 ${EMBREE_LINK_TARGET} OpenMP::OpenMP_CXX TBB::tbb)
 
-include(libigl)
-
-
-
 add_executable(fast_winding_numbers fast_winding_numbers.cc)
 target_compile_features(fast_winding_numbers PRIVATE cxx_std_17)
 target_link_libraries(fast_winding_numbers PRIVATE stl vec3 CGAL::CGAL OpenMP::OpenMP_CXX igl::core)
+
 if(UNIX)
     target_compile_options(fast_winding_numbers PRIVATE -Wno-unused-result)
 endif()

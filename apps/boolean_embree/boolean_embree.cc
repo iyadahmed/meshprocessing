@@ -29,10 +29,9 @@ int main(int argc, char *argv[])
     stl::read_stl(filepath_1, data->tri_soup);
     stl::read_stl(filepath_2, data->tri_soup);
 
-    // TODO: 
+    // TODO:
     // 1) deduplicate vertices and build topology from triangles
-    // 2) build two bvhs, one for edges, and one for triangles
-    // then overlap and intersect them
+    // 2) build two bvhs, one for edges, and one for triangles and overlap them (maybe not good idea, twice build time?)
 
     data->intersection_points.reserve(data->tri_soup.size());
 
@@ -56,7 +55,58 @@ int main(int argc, char *argv[])
     rtcCollide(scene, scene, collide_func, data);
     timer.tock("rtcCollide");
 
-    std::cout << data->intersection_points.size() << std::endl;
+    // You can try to get rid of the map of vectors, and sort the intersection points instead,
+    // and triangulate in a linear scan, but the logic is more complicated
+    // timer.tick();
+    // std::sort(data->intersection_points.begin(), data->intersection_points.end(), [](const IntersectionPoint &a, const IntersectionPoint &b)
+    //           { return a.primID < b.primID; });
+    // timer.tock("Sorting intersection points by primtivie id");
+
+    // for (int i = 0; (i < 100) && (i < data->intersection_points.size()); i++)
+    // {
+    //     auto ip = data->intersection_points[i];
+    //     std::cout << ip.p << " " << ip.primID << std::endl;
+    // }
+
+    std::vector<stl::Triangle> out;
+    stl::Triangle tri_buf;
+    timer.tick();
+    for (const auto &it : data->intersection_points_map)
+    {
+        std::vector<std::pair<Triangulation::Point, TriangulationPointInfo>> triangulation_input;
+        const auto triangle = to_cgal_triangle(data->tri_soup[it.first]);
+        for (int i = 0; i < 3; i++)
+        {
+            const auto &p3d = triangle.vertex(i);
+            auto p2d = project_point(p3d, triangle);
+            TriangulationPointInfo info{p3d};
+            triangulation_input.push_back({p2d, info});
+        }
+        for (const auto &ip : it.second)
+        {
+            const auto &p3d = ip.p;
+            auto p2d = project_point(p3d, triangle);
+            TriangulationPointInfo info{p3d};
+            triangulation_input.push_back({p2d, info});
+        }
+
+        Triangulation triangulation(triangulation_input.begin(), triangulation_input.end());
+        for (auto it = triangulation.finite_faces_begin(); it != triangulation.finite_faces_end(); it++)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    tri_buf.verts[i][j] = CGAL::to_double(it->vertex(i)->info().point_3d[j]);
+                }
+            }
+            out.push_back(tri_buf);
+        }
+    }
+    timer.tock("Triangulation");
+
+    std::cout << out.size() << std::endl;
+    stl::write_stl(out, "foo.stl");
 
     rtcReleaseScene(scene);
     rtcReleaseDevice(device);

@@ -6,6 +6,8 @@
 #include <embree3/rtcore.h>
 #include <algorithm>
 #include <execution>
+#include <igl/parallel_for.h>
+#include <mutex>
 
 #include "stl_io.hh"
 #include "vec3.hh"
@@ -28,6 +30,20 @@ static bool is_inside(const RTCScene &scene, const float &x, const float &y, con
         odd_intersections_num += (n & 1); // if odd add 1, if even add 0
     }
     return (odd_intersections_num) >= (threshold * NUM_SPHERE_SAMPLES);
+}
+
+struct int3
+{
+    int x, y, z;
+};
+
+static inline int3 jagged_index(int flat_index, int num_x, int num_y, int num_z)
+{
+    int z = flat_index / (num_x * num_y);
+    int x_p_y_t_num_x = flat_index - z * (num_x * num_y);
+    int y = x_p_y_t_num_x / num_x;
+    int x = x_p_y_t_num_x - (y * num_x);
+    return {x, y, z};
 }
 
 int main(int argc, char **argv)
@@ -81,43 +97,32 @@ int main(int argc, char **argv)
     int num_x = std::ceil(bb_dims.x / grid_step);
     int num_y = std::ceil(bb_dims.y / grid_step);
     int num_z = std::ceil(bb_dims.z / grid_step);
-
     int num_points = num_x * num_y * num_z;
     printf("Number of grid points before filtering = %d\n", num_points);
 
-    std::vector<std::pair<Vec3, bool>> points;
-    points.reserve(num_points);
-    for (int i = 0; i < num_x; i++)
+    std::mutex mutex;
+    std::ofstream file(output_filepath, std::ios::binary);
+    auto func_igl = [&](int flat_index)
     {
-        for (int j = 0; j < num_y; j++)
+        auto [i, j, k] = jagged_index(flat_index, num_x, num_y, num_z);
+        float x = i * grid_step + bb_min.x;
+        float y = j * grid_step + bb_min.y;
+        float z = k * grid_step + bb_min.z;
+        bool b = is_inside(scene, x, y, z, threshold);
         {
-            for (int k = 0; k < num_z; k++)
+            std::scoped_lock lock(mutex);
+            if (b)
             {
-                float x = i * grid_step + bb_min.x;
-                float y = j * grid_step + bb_min.y;
-                float z = k * grid_step + bb_min.z;
-                points.push_back(std::make_pair(Vec3{x, y, z}, false));
+                        file.write((char *)(&x), sizeof(float));
+                        file.write((char *)(&y), sizeof(float));
+                        file.write((char *)(&z), sizeof(float));
             }
         }
-    }
-
-    auto func = [&](std::pair<Vec3, bool> &item)
-    { item.second = is_inside(scene, item.first.x, item.first.y, item.first.z, threshold); };
+    };
 
     Timer timer;
-    std::for_each(std::execution::par_unseq, points.begin(), points.end(), func);
+    igl::parallel_for(num_points, func_igl, 1000);
     timer.tock("Filtering points");
-
-    std::ofstream file(output_filepath, std::ios::binary);
-    for (const auto &p : points)
-    {
-        if (p.second)
-        {
-            file.write((char *)(&p.first.x), sizeof(float));
-            file.write((char *)(&p.first.y), sizeof(float));
-            file.write((char *)(&p.first.z), sizeof(float));
-        }
-    }
 
     rtcReleaseScene(scene);
     rtcReleaseDevice(device);
