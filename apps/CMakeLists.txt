@@ -1,7 +1,14 @@
 find_package(TBB CONFIG REQUIRED)
 find_package(CGAL CONFIG REQUIRED)
 find_package(OpenMP REQUIRED)
-find_package(embree 3 REQUIRED)
+
+if(WIN32)
+    find_package(embree 3 REQUIRED)
+    set(EMBREE_LINK_TARGET embree)
+elseif(UNIX)
+    find_library(embree3 REQUIRED)
+    set(EMBREE_LINK_TARGET embree3)
+endif()
 
 add_executable(stl_stats stl_stats.cc)
 target_compile_features(stl_stats PRIVATE cxx_std_17)
@@ -21,7 +28,7 @@ target_link_libraries(boolean3 PRIVATE stl CGAL::CGAL)
 
 add_executable(boolean_embree boolean_embree/boolean_embree.cc boolean_embree/boolean_embree.hh)
 target_compile_features(boolean_embree PRIVATE cxx_std_17)
-target_link_libraries(boolean_embree PRIVATE stl vec3 CGAL::CGAL embree)
+target_link_libraries(boolean_embree PRIVATE stl vec3 CGAL::CGAL ${EMBREE_LINK_TARGET})
 
 add_executable(boolean5 boolean5.cc boolean5.hh)
 target_compile_features(boolean5 PRIVATE cxx_std_17)
@@ -33,7 +40,7 @@ target_link_libraries(bvh3 PRIVATE stl vec3 bvh CGAL::CGAL OpenMP::OpenMP_CXX TB
 
 add_executable(minimal_embree_bvh_build minimal_embree_bvh_build.cc minimal_embree_bvh_build.hh)
 target_compile_features(minimal_embree_bvh_build PRIVATE cxx_std_17)
-target_link_libraries(minimal_embree_bvh_build PRIVATE stl vec3 embree)
+target_link_libraries(minimal_embree_bvh_build PRIVATE stl vec3 ${EMBREE_LINK_TARGET})
 
 add_executable(winding_numbers winding_numbers.cc)
 target_compile_features(winding_numbers PRIVATE cxx_std_17)
@@ -63,12 +70,18 @@ add_executable(mcpip_embree
     mcpip_embree/embree_scene.hh
 )
 target_compile_features(mcpip_embree PRIVATE cxx_std_17)
-target_link_libraries(mcpip_embree PRIVATE stl vec3 embree OpenMP::OpenMP_CXX)
+target_link_libraries(mcpip_embree PRIVATE stl vec3 ${EMBREE_LINK_TARGET} OpenMP::OpenMP_CXX TBB::tbb)
 
 include(libigl)
+
+
+
 add_executable(fast_winding_numbers fast_winding_numbers.cc)
 target_compile_features(fast_winding_numbers PRIVATE cxx_std_17)
 target_link_libraries(fast_winding_numbers PRIVATE stl vec3 CGAL::CGAL OpenMP::OpenMP_CXX igl::core)
+if(UNIX)
+    target_compile_options(fast_winding_numbers PRIVATE -Wno-unused-result)
+endif()
 
 add_executable(boolean6 boolean6.cc)
 target_compile_features(boolean6 PRIVATE cxx_std_17)
