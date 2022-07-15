@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 
     int i = root_node.start_primitive_index;
     int j = root_node.end_primitive_index;
-    while (i != j)
+    while (i <= j)
     {
         if (centroid(tris[i])[split_axis] < split_position)
         {
