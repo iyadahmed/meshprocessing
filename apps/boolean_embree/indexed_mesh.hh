@@ -89,38 +89,37 @@ struct std::hash<Vec3>
 class IndexedMesh
 {
 public:
-    std::unordered_map<Vec3, size_t> verts_;
+    std::unordered_map<Vec3, size_t> vert_indices_map;
     std::vector<Vec3> verts;
 
-    std::unordered_map<IndexedEdge, size_t> edges_;
+    std::unordered_map<IndexedEdge, size_t> edge_indices_map;
     std::vector<IndexedEdge> edges;
 
-    std::unordered_map<IndexedTriangle, size_t> tris_;
+    std::unordered_map<IndexedTriangle, size_t> tris_indices_map;
     std::vector<IndexedTriangle> tris;
 
     int add_vertex(Vec3 pos)
     {
-        auto it = verts_.find(pos);
-        if (it != verts_.end())
+        auto it = vert_indices_map.find(pos);
+        if (it != vert_indices_map.end())
         {
             return it->second;
         }
         size_t new_index = verts.size();
-        verts_[pos] = new_index;
-        verts_.insert({pos, new_index});
+        vert_indices_map[pos] = new_index;
         verts.push_back(pos);
         return new_index;
     };
 
     int add_edge(int v1, int v2)
     {
-        auto it = edges_.find({v1, v2});
-        if (it != edges_.end())
+        auto it = edge_indices_map.find({v1, v2});
+        if (it != edge_indices_map.end())
         {
             return it->second;
         }
         size_t new_index = edges.size();
-        edges_[{v1, v2}] = new_index;
+        edge_indices_map[{v1, v2}] = new_index;
         edges.push_back({v1, v2});
         return new_index;
     }
@@ -138,13 +137,13 @@ public:
         add_edge(v2, v3);
         add_edge(v3, v1);
 
-        auto it = tris_.find({v1, v2, v3});
-        if (it != tris_.end())
+        auto it = tris_indices_map.find({v1, v2, v3});
+        if (it != tris_indices_map.end())
         {
             return it->second;
         }
         size_t new_index = tris.size();
-        tris_[{v1, v2, v3}] = new_index;
+        tris_indices_map[{v1, v2, v3}] = new_index;
         tris.push_back({v1, v2, v3});
         return new_index;
     }
