@@ -146,6 +146,16 @@ struct Vec3
         return {x / t, y / t, z / t};
     }
 
+    bool operator==(const Vec3 &other) const noexcept
+    {
+        return (x == other.x) && (y == other.y) && (z == other.z);
+    }
+
+    bool operator!=(const Vec3 &other) const noexcept
+    {
+        return !(this->operator==(other));
+    }
+
     float &operator[](size_t index) noexcept
     {
         return reinterpret_cast<float *>(this)[index];

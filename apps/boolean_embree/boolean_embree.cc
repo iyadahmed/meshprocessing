@@ -5,7 +5,8 @@
 
 #include "stl_io.hh"
 #include "boolean_embree.hh"
-#include "../timers.hh"
+#include "indexed_mesh.hh"
+#include "timers.hh"
 
 using namespace mp::io;
 
@@ -29,9 +30,20 @@ int main(int argc, char *argv[])
     stl::read_stl(filepath_1, data->tri_soup);
     stl::read_stl(filepath_2, data->tri_soup);
 
-    // TODO:
-    // 1) deduplicate vertices and build topology from triangles
-    // 2) build two bvhs, one for edges, and one for triangles and overlap them (maybe not good idea, twice build time?)
+    IndexedMesh mesh;
+    {
+        ScopedTimer scoped_timer("IndexedMesh");
+        for (const auto &t : data->tri_soup)
+        {
+            Vec3 *verts = (Vec3 *)t.verts;
+            mesh.add_triangle(verts[0], verts[1], verts[2]);
+        }
+    }
+
+    std::cout << data->tri_soup.size() << std::endl;
+    std::cout << mesh.verts.size() << std::endl;
+
+    return 0;
 
     data->intersection_points.reserve(data->tri_soup.size());
 

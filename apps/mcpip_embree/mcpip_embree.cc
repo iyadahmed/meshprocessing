@@ -11,7 +11,7 @@
 
 #include "stl_io.hh"
 #include "vec3.hh"
-#include "../timers.hh"
+#include "timers.hh"
 
 #include "../monte_carlo_full_sphere_samples.hh"
 #include "embree_do_intersect.hh"

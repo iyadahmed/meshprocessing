@@ -25,6 +25,11 @@ target_sources(vec3 INTERFACE vec3/vec3.hh)
 target_include_directories(vec3 INTERFACE vec3)
 target_compile_features(vec3 INTERFACE cxx_std_11)
 
+add_library(timers INTERFACE)
+target_sources(timers INTERFACE timers/timers.hh)
+target_include_directories(timers INTERFACE timers)
+target_compile_features(timers INTERFACE cxx_std_17)
+
 add_library(bvh INTERFACE)
 target_sources(bvh INTERFACE bvh/bvh.hh)
 target_include_directories(bvh INTERFACE bvh)

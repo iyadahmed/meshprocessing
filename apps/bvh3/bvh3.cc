@@ -6,7 +6,7 @@
 #include "morton_codes.hh"
 #include "stl_io.hh"
 #include "vec3.hh"
-#include "../timers.hh"
+#include "timers.hh"
 
 using namespace mp::io;
 
