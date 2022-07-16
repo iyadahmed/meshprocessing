@@ -20,12 +20,13 @@
 #include <CGAL/AABB_traits.h>
 // #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
-#include <CGAL/Simple_cartesian.h>
+// #include <CGAL/Simple_cartesian.h>
 #include <CGAL/Triangulation_2.h>
 #include <CGAL/Triangulation_vertex_base_with_info_2.h>
 
 #include "stl_io.hh"
 #include "vec3.hh"
+#include "indexed_mesh.hh"
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 // typedef CGAL::Simple_cartesian<float> K;
@@ -57,6 +58,7 @@ struct IntersectionData
     std::vector<stl::Triangle> tri_soup;
     std::vector<IntersectionPoint> intersection_points;
     std::unordered_map<unsigned int, std::vector<IntersectionPoint>> intersection_points_map;
+    IndexedMesh mesh;
 };
 
 inline Triangulation::Point project_point(const Point &a, const Triangle &t)
@@ -74,6 +76,15 @@ inline Triangle to_cgal_triangle(const stl::Triangle &t)
         {t.v1[0], t.v1[1], t.v1[2]},
         {t.v2[0], t.v2[1], t.v2[2]},
         {t.v3[0], t.v3[1], t.v3[2]},
+    };
+}
+
+inline Triangle to_cgal_triangle(const Vec3 &a, const Vec3 &b, const Vec3 &c)
+{
+    return {
+        {a.x, a.y, a.z},
+        {b.x, b.y, b.z},
+        {c.x, c.y, c.z},
     };
 }
 
@@ -105,6 +116,83 @@ inline Segment to_cgal_segment(const Vec3 &a, const Vec3 &b)
 
 //     return (a != b) && (c == d) && (d == e);
 // }
+
+inline void collide_func_process_intersection(
+    IntersectionData *data,
+    const boost::optional<boost::variant<Point, Segment>> &result,
+    unsigned int primID0,
+    unsigned int primID1,
+    unsigned int geomID0,
+    unsigned int geomID1)
+{
+    auto &out = data->intersection_points_map;
+    if (result)
+    {
+        if (auto p = boost::get<Point>(&(*result)))
+        {
+            data->mutex.lock();
+            out[primID0].push_back({geomID0, primID0, *p});
+            out[primID1].push_back({geomID1, primID1, *p});
+            data->mutex.unlock();
+        }
+        else if (auto s = boost::get<Segment>(&(*result)))
+        {
+            data->mutex.lock();
+            out[primID0].push_back({geomID0, primID0, s->vertex(0)});
+            out[primID0].push_back({geomID0, primID0, s->vertex(1)});
+
+            out[primID1].push_back({geomID1, primID1, s->vertex(0)});
+            out[primID1].push_back({geomID1, primID1, s->vertex(1)});
+            data->mutex.unlock();
+        }
+    }
+}
+
+inline void collide_func_indexed_mesh(void *user_data_ptr, RTCCollision *collisions, unsigned int num_collisions)
+{
+    if (num_collisions == 0)
+        return;
+
+    IntersectionData *data = (IntersectionData *)user_data_ptr;
+    for (size_t i = 0; i < num_collisions; i++)
+    {
+        const unsigned &primID0 = collisions[i].primID0;
+        const unsigned &primID1 = collisions[i].primID1;
+        const unsigned &geomID0 = collisions[i].geomID0;
+        const unsigned &geomID1 = collisions[i].geomID1;
+
+        if (primID0 == primID1)
+        {
+            continue;
+        }
+        const auto &t1 = data->mesh.tris[primID0];
+        const auto &t2 = data->mesh.tris[primID1];
+
+        const auto &verts = data->mesh.verts;
+
+        const auto &t2_v1 = verts[t2.v1];
+        const auto &t2_v2 = verts[t2.v2];
+        const auto &t2_v3 = verts[t2.v3];
+
+        const auto &t2_cgal = to_cgal_triangle(t2_v1, t2_v2, t2_v3);
+
+        std::pair<int, int> segments[3] = {{t1.v1, t1.v2}, {t1.v2, t1.v3}, {t1.v3, t1.v1}};
+        for (int j = 0; j < 3; j++)
+        {
+            auto [v1, v2] = segments[j];
+            if (t2.has_edge(v1, v2))
+            {
+                continue;
+            }
+            auto s_cgal = to_cgal_segment(verts[v1], verts[v2]);
+            if (CGAL::do_intersect(s_cgal, t2_cgal))
+            {
+                const auto &result = CGAL::intersection(s_cgal, t2_cgal);
+                collide_func_process_intersection(data, result, primID0, primID1, geomID0, geomID1);
+            }
+        }
+    }
+}
 
 inline void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned int num_collisions)
 {
@@ -192,6 +280,40 @@ inline void collide_func(void *user_data_ptr, RTCCollision *collisions, unsigned
                 }
             }
         }
+    }
+}
+
+void triangle_bounds_func_indexed_mesh(const struct RTCBoundsFunctionArguments *args)
+{
+    IntersectionData *data = (IntersectionData *)args->geometryUserPtr;
+    const IndexedMesh &mesh = data->mesh;
+    const auto &t = mesh.tris[args->primID];
+
+    float &lower_x = args->bounds_o->lower_x;
+    float &lower_y = args->bounds_o->lower_y;
+    float &lower_z = args->bounds_o->lower_z;
+
+    float &upper_x = args->bounds_o->upper_x;
+    float &upper_y = args->bounds_o->upper_y;
+    float &upper_z = args->bounds_o->upper_z;
+
+    lower_x = INFINITY;
+    lower_y = INFINITY;
+    lower_z = INFINITY;
+
+    upper_x = -INFINITY;
+    upper_y = -INFINITY;
+    upper_z = -INFINITY;
+
+    for (int i = 0; i < 3; i++)
+    {
+        lower_x = std::min(lower_x, mesh.verts[t.verts[i]][0]);
+        lower_y = std::min(lower_y, mesh.verts[t.verts[i]][1]);
+        lower_z = std::min(lower_z, mesh.verts[t.verts[i]][2]);
+
+        upper_x = std::max(upper_x, mesh.verts[t.verts[i]][0]);
+        upper_y = std::max(upper_y, mesh.verts[t.verts[i]][1]);
+        upper_z = std::max(upper_z, mesh.verts[t.verts[i]][2]);
     }
 }
 

@@ -6,9 +6,13 @@
 
 #include "vec3.hh"
 
-struct IndexedTriangle
+union IndexedTriangle
 {
-    int v1, v2, v3;
+    struct
+    {
+        int v1, v2, v3;
+    };
+    int verts[3];
     IndexedTriangle(int v1_, int v2_, int v3_)
     {
         v1 = v1_;
@@ -21,6 +25,14 @@ struct IndexedTriangle
             std::swap(v1, v3);
         if (v2 > v3)
             std::swap(v2, v3);
+    }
+    bool has_vertex(int v) const
+    {
+        return (v1 == v) || (v2 == v) || (v3 == v);
+    }
+    bool has_edge(int v1, int v2) const
+    {
+        return has_vertex(v1) && has_vertex(v2);
     }
 };
 

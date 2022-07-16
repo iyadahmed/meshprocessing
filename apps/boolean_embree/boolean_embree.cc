@@ -30,20 +30,17 @@ int main(int argc, char *argv[])
     stl::read_stl(filepath_1, data->tri_soup);
     stl::read_stl(filepath_2, data->tri_soup);
 
-    IndexedMesh mesh;
     {
         ScopedTimer scoped_timer("IndexedMesh");
         for (const auto &t : data->tri_soup)
         {
             Vec3 *verts = (Vec3 *)t.verts;
-            mesh.add_triangle(verts[0], verts[1], verts[2]);
+            data->mesh.add_triangle(verts[0], verts[1], verts[2]);
         }
     }
 
     std::cout << data->tri_soup.size() << std::endl;
-    std::cout << mesh.verts.size() << std::endl;
-
-    return 0;
+    std::cout << data->mesh.verts.size() << std::endl;
 
     data->intersection_points.reserve(data->tri_soup.size());
 
@@ -51,8 +48,8 @@ int main(int argc, char *argv[])
     unsigned int geomID = rtcAttachGeometry(scene, geom);
     rtcSetGeometryUserPrimitiveCount(geom, data->tri_soup.size());
     rtcSetGeometryUserData(geom, data);
-    rtcSetGeometryBoundsFunction(geom, triangle_bounds_func, nullptr);
-    rtcSetGeometryIntersectFunction(geom, triangle_intersect_func);
+    rtcSetGeometryBoundsFunction(geom, triangle_bounds_func_indexed_mesh, nullptr);
+    // rtcSetGeometryIntersectFunction(geom, triangle_intersect_func);
     rtcCommitGeometry(geom);
     rtcReleaseGeometry(geom);
 
@@ -64,8 +61,9 @@ int main(int argc, char *argv[])
 
     // Perform self intersection
     Timer timer;
-    rtcCollide(scene, scene, collide_func, data);
+    rtcCollide(scene, scene, collide_func_indexed_mesh, data);
     timer.tock("rtcCollide");
+    std::cout << data->intersection_points_map.size() << std::endl;
 
     // You can try to get rid of the map of vectors, and sort the intersection points instead,
     // and triangulate in a linear scan, but the logic is more complicated
