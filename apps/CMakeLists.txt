@@ -61,7 +61,7 @@ target_link_libraries(bvhapp2 PRIVATE stl vec3 bvh)
 
 add_executable(bvhapp4 bvh4.cc)
 target_compile_features(bvhapp4 PRIVATE cxx_std_17)
-target_link_libraries(bvhapp4 PRIVATE stl vec3)
+target_link_libraries(bvhapp4 PRIVATE stl vec3 bvh)
 
 add_executable(mcpip mcpip.cc)
 target_compile_features(mcpip PRIVATE cxx_std_17)

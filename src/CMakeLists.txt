@@ -28,7 +28,7 @@ target_compile_features(vec3 INTERFACE cxx_std_11)
 add_library(bvh INTERFACE)
 target_sources(bvh INTERFACE bvh/bvh.hh)
 target_include_directories(bvh INTERFACE bvh)
-target_link_libraries(bvh INTERFACE vec3)
+target_link_libraries(bvh INTERFACE vec3 stl)
 target_compile_features(bvh INTERFACE cxx_std_11)
 
 find_library(MATH_LIBRARY m)

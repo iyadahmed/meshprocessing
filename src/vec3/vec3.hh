@@ -156,3 +156,14 @@ struct Vec3
         return (*this)[index];
     }
 };
+
+// Convenience functions
+inline Vec3 cross(const Vec3 &a, const Vec3 &b)
+{
+    return a.cross(b);
+}
+
+inline float dot(const Vec3 &a, const Vec3 &b)
+{
+    return a.dot(b);
+}

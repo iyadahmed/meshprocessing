@@ -1,40 +1,65 @@
-#include <cmath>
-#include <iostream>
+#pragma once
 
-#include "float3.hh"
+#ifdef NDEBUG
+#define tassert(x) ()
+#else
+#define tassert(x) \
+    if (!(x))      \
+    {              \
+        throw;     \
+    }
+#endif
+
+#include <cmath>
+#include <algorithm>
+
+#include "vec3.hh"
+#include "stl_io.hh"
+
+using namespace mp::io;
 
 struct BVHTriangle
 {
-    float3 v0, v1, v2, centroid;
+    Vec3 v0, v1, v2, centroid;
 };
 
 struct BVHRay
 {
-    float3 O, D;
-    float t = 1e30f;
+    Vec3 O, D;
+    float t = INFINITY;
 };
 
 struct BVHNode
 {
-    float3 aabb_min, aabb_max;
-    int left_child_index, first_tri_index, tri_count;
-    bool is_leaf() const { return tri_count > 0; }
+    BVHNode *L, *R;
+    Vec3 aabb_max, aabb_min;
+    std::vector<stl::Triangle>::iterator start, end;
+    int count() const
+    {
+        return end - start + 1;
+    }
 };
+
+inline Vec3 centroid(const stl::Triangle &t)
+{
+    Vec3 *verts = (Vec3 *)t.verts;
+    return (verts[0] + verts[1] + verts[2]) / 3;
+}
 
 void intersect_ray_tri(BVHRay &ray, const BVHTriangle &tri)
 {
-    const float3 edge1 = tri.v1 - tri.v0;
-    const float3 edge2 = tri.v2 - tri.v0;
-    const float3 h = cross(ray.D, edge2);
+    const Vec3 edge1 = tri.v1 - tri.v0;
+    const Vec3 edge2 = tri.v2 - tri.v0;
+    const Vec3 h = cross(ray.D, edge2);
     const float a = dot(edge1, h);
     if (a > -0.0001f && a < 0.0001f)
         return; // ray parallel to triangle
     const float f = 1 / a;
-    const float3 s = ray.O - tri.v0;
+    const Vec3 s = ray.O - tri.v0;
     const float u = f * dot(s, h);
     if (u < 0 || u > 1)
         return;
-    const float3 q = cross(s, edge1);
+    const Vec3 q = cross(s, edge1);
     const float v = f * dot(ray.D, q);
     if (v < 0 || u + v > 1)
         return;
@@ -43,7 +68,7 @@ void intersect_ray_tri(BVHRay &ray, const BVHTriangle &tri)
         ray.t = std::min(ray.t, t);
 }
 
-bool intersect_ray_aabb(const BVHRay &ray, const float3 &bmin, const float3 &bmax)
+bool intersect_ray_aabb(const BVHRay &ray, const Vec3 &bmin, const Vec3 &bmax)
 {
     float tx1 = (bmin.x - ray.O.x) / ray.D.x, tx2 = (bmax.x - ray.O.x) / ray.D.x;
     float tmin = std::min(tx1, tx2), tmax = std::max(tx1, tx2);
@@ -58,156 +83,121 @@ class BVH
 {
 private:
     BVHNode *nodes_;
-    BVHTriangle *tris_;
-    int tris_num_;
-    int used_nodes_num_;
-    void update_node_bounds(int node_index)
+
+    void recalc_bounds(BVHNode *node, const std::vector<stl::Triangle> &tris)
     {
-        BVHNode &node = nodes_[node_index];
-        node.aabb_max = float3(-1e30);
-        node.aabb_min = float3(1e30);
+        node->aabb_max = -INFINITY;
+        node->aabb_min = INFINITY;
+        // tassert(node->start >= 0);
+        // tassert(node->start < tris.size());
+        // tassert(node->end >= 0);
+        // tassert(node->end < tris.size());
 
-        for (int i = node.first_tri_index; i < node.tri_count; i++)
+        for (auto it = node->start; it < node->end; it++)
         {
-            const BVHTriangle &leaf_tri = tris_[i];
-            node.aabb_max.max(leaf_tri.v0);
-            node.aabb_max.max(leaf_tri.v1);
-            node.aabb_max.max(leaf_tri.v2);
-
-            node.aabb_min.min(leaf_tri.v0);
-            node.aabb_min.min(leaf_tri.v1);
-            node.aabb_min.min(leaf_tri.v2);
+            for (int vi = 0; vi < 3; vi++)
+            {
+                node->aabb_max.max(it->verts[vi]);
+                node->aabb_min.min(it->verts[vi]);
+            }
         }
     }
-    void subdivide(int node_index)
+
+    void subdivide(BVHNode *nodes_pool, BVHNode *root, std::vector<stl::Triangle> &tris, int num_used_nodes)
     {
-        BVHNode &node = nodes_[node_index];
-        if (node.tri_count <= 2)
+        if (root->count() <= 2)
         {
             return;
         }
-        float3 extent = node.aabb_max - node.aabb_min;
-
-        int axis = 0;
-        if (extent.y > extent.x)
+        Vec3 dims = root->aabb_max - root->aabb_min;
+        int split_axis = 0;
+        if (dims.y < dims.x)
         {
-            axis = 1;
+            split_axis = 1;
         }
-        if (extent.z > extent[axis])
+        if (dims.z > dims[split_axis])
         {
-            axis = 2;
+            split_axis = 2;
         }
-        float split_pos = node.aabb_min[axis] + extent[axis] * .5f;
+        float split_pos = root->aabb_min[split_axis] + dims[split_axis] * .5;
 
-        // In-place parition
-        int i = node.first_tri_index;
-        int j = node.tri_count + i - 1;
-        while (i <= j)
-        {
-            if (tris_[i].centroid[axis] < split_pos)
-            {
-                i++;
-            }
-            else
-            {
-                std::swap(tris_[i], tris_[j--]);
-            }
-        }
+        auto it = std::partition(root->start, root->end, [=](const stl::Triangle &t)
+                                 { return centroid(t)[split_axis] < split_pos; });
 
-        // Abort split if one of the sides is empty
-        int left_count = i - node.first_tri_index;
-        if (left_count == 0 || left_count == node.tri_count)
+        if ((it == root->start) || (it == root->end))
         {
+            // abort split
             return;
         }
 
-        // Create child nodes
-        int left_child_index = used_nodes_num_++;
-        int right_child_index = used_nodes_num_++;
+        BVHNode *L = nodes_pool + (num_used_nodes++);
+        L->start = root->start;
+        L->end = it - 1;
+        recalc_bounds(L, tris);
+        L->L = L->R = nullptr;
 
-        nodes_[left_child_index].first_tri_index = node.first_tri_index;
-        nodes_[left_child_index].tri_count = left_count;
+        BVHNode *R = nodes_pool + (num_used_nodes++);
+        R->start = it;
+        R->end = root->end;
+        recalc_bounds(R, tris);
+        R->L = R->R = nullptr;
 
-        nodes_[right_child_index].first_tri_index = i;
-        nodes_[right_child_index].tri_count = node.tri_count - left_count;
+        root->L = L;
+        root->R = R;
 
-        node.left_child_index = left_child_index;
-        node.tri_count = 0;
-
-        update_node_bounds(left_child_index);
-        update_node_bounds(right_child_index);
-
-        // Recurse
-        subdivide(left_child_index);
-        subdivide(right_child_index);
+        subdivide(nodes_pool, L, tris, num_used_nodes);
+        subdivide(nodes_pool, R, tris, num_used_nodes);
     }
+    int count_(const BVHNode *root) const
+    {
+        if (root == nullptr)
+        {
+            return 0;
+        }
+        return 1 + count_(root->L) + count_(root->R);
+    };
 
 public:
-    BVH(int tris_num) : tris_num_(tris_num)
+    BVH(std::vector<stl::Triangle> &tris)
     {
-        nodes_ = new BVHNode[tris_num * 2]{};
-        tris_ = new BVHTriangle[tris_num]{};
-        used_nodes_num_ = 1;
+        if (tris.size() == 0)
+        {
+            throw "Empty mesh";
+        }
+        nodes_ = new BVHNode[2 * tris.size() - 1];
+
+        BVHNode *root = nodes_;
+        root->start = tris.begin();
+        root->end = tris.end();
+        root->L = root->R = nullptr;
+        recalc_bounds(root, tris);
+
+        subdivide(nodes_, root, tris, 1);
     }
+
+    int count() const
+    {
+        return count_(nodes_);
+    }
+
     ~BVH()
     {
         delete[] nodes_;
-        delete[] tris_;
     }
-    int tris_num() const
-    {
-        return tris_num_;
-    }
-    BVHTriangle &triangle(int index)
-    {
-        return tris_[index];
-    }
-    void build()
-    {
-        // Calculate triangle centroids
-        for (int i = 0; i < tris_num_; i++)
-        {
-            BVHTriangle &t = tris_[i];
-            t.centroid = (t.v0 + t.v1 + t.v2) * .3333333f;
-        }
-
-        BVHNode &root = nodes_[0];
-        root.first_tri_index = root.left_child_index = 0;
-        root.tri_count = tris_num_;
-
-        update_node_bounds(0);
-        subdivide(0);
-
-        for (int i = 0; i < used_nodes_num_; i++)
-        {
-            const BVHNode &n = nodes_[i];
-            std::cout << "AABB Max: ";
-            std::cout << "(" << n.aabb_max.x << ", " << n.aabb_max.y << ", " << n.aabb_max.z << ")";
-            std::cout << ", Min: (" << n.aabb_min.x << ", " << n.aabb_min.y << ", " << n.aabb_min.z << ")";
-            std::cout << std::endl;
-        }
-    }
-    void intersect_ray(BVHRay &ray, int node_index)
-    {
-        BVHNode &node = nodes_[node_index];
-        if (!intersect_ray_aabb(ray, node.aabb_min, node.aabb_max))
-            return;
-        if (node.is_leaf())
-        {
-            for (int i = node.first_tri_index; i < node.tri_count; i++)
-                intersect_ray_tri(ray, tris_[i]);
-        }
-        else
-        {
-            intersect_ray(ray, node.left_child_index);
-            intersect_ray(ray, node.left_child_index + 1);
-        }
-    }
+    // void intersect_ray(BVHRay &ray, int node_index)
+    // {
+    //     BVHNode &node = nodes_[node_index];
+    //     if (!intersect_ray_aabb(ray, node.aabb_min, node.aabb_max))
+    //         return;
+    //     if (node.is_leaf())
+    //     {
+    //         for (int i = node.first_tri_index; i < node.tri_count; i++)
+    //             intersect_ray_tri(ray, tris_[i]);
+    //     }
+    //     else
+    //     {
+    //         intersect_ray(ray, node.left_child_index);
+    //         intersect_ray(ray, node.left_child_index + 1);
+    //     }
+    // }
 };
-
-#include <assert.h>
-void TEST()
-{
-    BVH bvh(100);
-    assert(bvh.tris_num() == 100);
-}
