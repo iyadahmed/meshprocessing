@@ -163,7 +163,7 @@ struct Vec3
 
     float operator[](size_t index) const noexcept
     {
-        return (*this)[index];
+        return reinterpret_cast<const float *>(this)[index];
     }
 };
 
