@@ -98,6 +98,22 @@ void recalc_bounds(BVHNode *node, const std::vector<stl::Triangle> &tris)
 {
     node->aabb_max = {-INFINITY, -INFINITY, -INFINITY};
     node->aabb_min = {INFINITY, INFINITY, INFINITY};
+    if (node->start < 0)
+    {
+        throw;
+    }
+    if (node->start >= tris.size())
+    {
+        throw;
+    }
+    if (node->end < 0)
+    {
+        throw;
+    }
+    if (node->end >= tris.size())
+    {
+        throw;
+    }
     for (int i = node->start; i < node->end; i++)
     {
         for (int vi = 0; vi < 3; vi++)
@@ -111,7 +127,7 @@ void recalc_bounds(BVHNode *node, const std::vector<stl::Triangle> &tris)
     }
 }
 
-void subdivide(BVHNode *root, std::vector<stl::Triangle> &tris)
+void subdivide(BVHNode *nodes_pool, BVHNode *root, std::vector<stl::Triangle> &tris, int num_used_nodes)
 {
     if (root->count() <= 2)
     {
@@ -129,8 +145,8 @@ void subdivide(BVHNode *root, std::vector<stl::Triangle> &tris)
     }
     float split_pos = root->aabb_min[split_axis] + dims[split_axis] * .5;
 
-    int left_parition_count = 0;
-    int j = tris.size() - 1;
+    int left_parition_count = root->start;
+    int j = root->end;
     while (left_parition_count <= j)
     {
         if (centroid(tris[left_parition_count])[split_axis] < split_pos)
@@ -149,13 +165,13 @@ void subdivide(BVHNode *root, std::vector<stl::Triangle> &tris)
         return;
     }
 
-    BVHNode *L = new BVHNode;
+    BVHNode *L = nodes_pool + (num_used_nodes++);
     L->start = root->start;
     L->end = root->start + left_parition_count - 1;
     recalc_bounds(L, tris);
     L->L = L->R = nullptr;
 
-    BVHNode *R = new BVHNode;
+    BVHNode *R = nodes_pool + (num_used_nodes++);
     R->start = L->end + 1;
     R->end = root->end;
     recalc_bounds(R, tris);
@@ -164,8 +180,8 @@ void subdivide(BVHNode *root, std::vector<stl::Triangle> &tris)
     root->L = L;
     root->R = R;
 
-    subdivide(L, tris);
-    subdivide(R, tris);
+    subdivide(nodes_pool, L, tris, num_used_nodes);
+    subdivide(nodes_pool, R, tris, num_used_nodes);
 }
 
 int count(BVHNode *root)
@@ -194,13 +210,15 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    BVHNode *root = new BVHNode;
+    BVHNode *nodes = new BVHNode[2 * tris.size() - 1];
+
+    BVHNode *root = nodes;
     root->start = 0;
     root->end = tris.size() - 1;
     root->L = root->R = nullptr;
     recalc_bounds(root, tris);
 
-    subdivide(root, tris);
+    subdivide(nodes, root, tris, 1);
     std::cout << count(root) << std::endl;
 
     return 0;
