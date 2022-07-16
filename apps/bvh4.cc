@@ -1,128 +1,55 @@
 #include <vector>
 #include <iostream>
-#include <cassert>
+#include <cmath>
 #include <algorithm>
 
 #include "stl_io.hh"
+#include "vec3.hh"
 
 using namespace mp::io;
 
-#include <cmath>
-
-struct float3
-{
-    float x, y, z;
-    float3(float value = 0.0f)
-    {
-        x = y = z = value;
+#ifdef NDEBUG
+#define tassert(x) ()
+#else
+#define tassert(x) \
+    if (!(x))      \
+    {              \
+        throw;     \
     }
-    float3(float x, float y, float z) : x(x), y(y), z(z)
-    {
-    }
-    float &operator[](int index)
-    {
-        return reinterpret_cast<float *>(this)[index];
-    }
-    void max(const float3 &other)
-    {
-        x = std::max(x, other.x);
-        y = std::max(y, other.y);
-        z = std::max(z, other.z);
-    }
-    void min(const float3 &other)
-    {
-        x = std::min(x, other.x);
-        y = std::min(y, other.y);
-        z = std::min(z, other.z);
-    }
-    float3 operator-(const float3 &other) const
-    {
-        return {x - other.x, y - other.y, z - other.z};
-    }
-    float3 operator+(const float3 &other) const
-    {
-        return {x + other.x, y + other.y, z + other.z};
-    }
-    float3 operator*(float value)
-    {
-        return {x * value, y * value, z * value};
-    }
-    float3 cross(const float3 &other) const
-    {
-        return {y * other.z - z * other.y,
-                z * other.x - x * other.z,
-                x * other.y - y * other.x};
-    }
-    float dot(const float3 &other) const
-    {
-        return x * other.x + y * other.y + z * other.z;
-    }
-    void normalize()
-    {
-        float l = std::sqrt(x * x + y * y + z * z);
-        x /= l;
-        y /= l;
-        z /= l;
-    }
-};
+#endif
 
 struct BVHNode
 {
     BVHNode *L, *R;
-    float3 aabb_max, aabb_min;
-    int start, end;
+    Vec3 aabb_max, aabb_min;
+    std::vector<stl::Triangle>::iterator start, end;
     int count() const
     {
         return end - start + 1;
     }
 };
 
-void print_float3(const float3 &v)
+inline Vec3 centroid(const stl::Triangle &t)
 {
-    printf("(%f, %f, %f)", v.x, v.y, v.z);
-}
-
-float3 centroid(const stl::Triangle &t)
-{
-    float3 out{0.0f, 0.0f, 0.0f};
-    for (int i = 0; i < 3; i++)
-    {
-        out.x += (t.verts[i][0] / 3);
-        out.y += (t.verts[i][1] / 3);
-        out.z += (t.verts[i][2] / 3);
-    }
-    return out;
+    Vec3 *verts = (Vec3 *)t.verts;
+    return (verts[0] + verts[1] + verts[2]) / 3;
 }
 
 void recalc_bounds(BVHNode *node, const std::vector<stl::Triangle> &tris)
 {
-    node->aabb_max = {-INFINITY, -INFINITY, -INFINITY};
-    node->aabb_min = {INFINITY, INFINITY, INFINITY};
-    if (node->start < 0)
-    {
-        throw;
-    }
-    if (node->start >= tris.size())
-    {
-        throw;
-    }
-    if (node->end < 0)
-    {
-        throw;
-    }
-    if (node->end >= tris.size())
-    {
-        throw;
-    }
-    for (int i = node->start; i < node->end; i++)
+    node->aabb_max = -INFINITY;
+    node->aabb_min = INFINITY;
+    // tassert(node->start >= 0);
+    // tassert(node->start < tris.size());
+    // tassert(node->end >= 0);
+    // tassert(node->end < tris.size());
+
+    for (auto it = node->start; it < node->end; it++)
     {
         for (int vi = 0; vi < 3; vi++)
         {
-            for (int ci = 0; ci < 3; ci++)
-            {
-                node->aabb_max[ci] = fmaxf(node->aabb_max[ci], tris[i].verts[vi][ci]);
-                node->aabb_min[ci] = fminf(node->aabb_max[ci], tris[i].verts[vi][ci]);
-            }
+            node->aabb_max.max(it->verts[vi]);
+            node->aabb_min.min(it->verts[vi]);
         }
     }
 }
@@ -133,7 +60,7 @@ void subdivide(BVHNode *nodes_pool, BVHNode *root, std::vector<stl::Triangle> &t
     {
         return;
     }
-    float3 dims = root->aabb_max - root->aabb_min;
+    Vec3 dims = root->aabb_max - root->aabb_min;
     int split_axis = 0;
     if (dims.y < dims.x)
     {
@@ -145,21 +72,10 @@ void subdivide(BVHNode *nodes_pool, BVHNode *root, std::vector<stl::Triangle> &t
     }
     float split_pos = root->aabb_min[split_axis] + dims[split_axis] * .5;
 
-    int left_parition_count = root->start;
-    int j = root->end;
-    while (left_parition_count <= j)
-    {
-        if (centroid(tris[left_parition_count])[split_axis] < split_pos)
-        {
-            left_parition_count++;
-        }
-        else
-        {
-            std::swap(tris[left_parition_count], tris[j--]);
-        }
-    }
+    auto it = std::partition(root->start, root->end, [=](const stl::Triangle &t)
+                             { return centroid(t)[split_axis] < split_pos; });
 
-    if ((left_parition_count == root->count()) || (left_parition_count == 0))
+    if ((it == root->start) || (it == root->end))
     {
         // abort split
         return;
@@ -167,12 +83,12 @@ void subdivide(BVHNode *nodes_pool, BVHNode *root, std::vector<stl::Triangle> &t
 
     BVHNode *L = nodes_pool + (num_used_nodes++);
     L->start = root->start;
-    L->end = root->start + left_parition_count - 1;
+    L->end = it - 1;
     recalc_bounds(L, tris);
     L->L = L->R = nullptr;
 
     BVHNode *R = nodes_pool + (num_used_nodes++);
-    R->start = L->end + 1;
+    R->start = it;
     R->end = root->end;
     recalc_bounds(R, tris);
     R->L = R->R = nullptr;
@@ -213,8 +129,8 @@ int main(int argc, char **argv)
     BVHNode *nodes = new BVHNode[2 * tris.size() - 1];
 
     BVHNode *root = nodes;
-    root->start = 0;
-    root->end = tris.size() - 1;
+    root->start = tris.begin();
+    root->end = tris.end();
     root->L = root->R = nullptr;
     recalc_bounds(root, tris);
 
