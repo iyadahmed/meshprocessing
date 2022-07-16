@@ -106,6 +106,7 @@ public:
             return it->second;
         }
         size_t new_index = verts.size();
+        verts_[pos] = new_index;
         verts_.insert({pos, new_index});
         verts.push_back(pos);
         return new_index;
@@ -119,7 +120,7 @@ public:
             return it->second;
         }
         size_t new_index = edges.size();
-        edges_.insert({{v1, v2}, new_index});
+        edges_[{v1, v2}] = new_index;
         edges.push_back({v1, v2});
         return new_index;
     }
@@ -142,9 +143,10 @@ public:
         {
             return it->second;
         }
-        it->second = tris.size();
+        size_t new_index = tris.size();
+        tris_[{v1, v2, v3}] = new_index;
         tris.push_back({v1, v2, v3});
-        return it->second;
+        return new_index;
     }
 
     int add_triangle(Vec3 a, Vec3 b, Vec3 c)
