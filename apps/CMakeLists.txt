@@ -34,7 +34,7 @@ add_executable(boolean_embree
     boolean_embree/indexed_mesh.hh
 )
 target_compile_features(boolean_embree PRIVATE cxx_std_17)
-target_link_libraries(boolean_embree PRIVATE timers stl vec3 CGAL::CGAL ${EMBREE_LINK_TARGET})
+target_link_libraries(boolean_embree PRIVATE timers stl vec3 CGAL::CGAL TBB::tbb ${EMBREE_LINK_TARGET})
 
 add_executable(boolean5 boolean5.cc boolean5.hh)
 target_compile_features(boolean5 PRIVATE cxx_std_17)

@@ -15,6 +15,7 @@
 #include <vector>
 #include <unordered_map>
 #include <mutex>
+#include <tbb/concurrent_vector.h>
 
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
@@ -56,7 +57,8 @@ struct IntersectionData
 {
     std::mutex mutex;
     std::vector<stl::Triangle> tri_soup;
-    std::vector<IntersectionPoint> intersection_points;
+    // std::vector<IntersectionPoint> intersection_points;
+    tbb::concurrent_vector<IntersectionPoint> intersection_points;
     std::unordered_map<unsigned int, std::vector<IntersectionPoint>> intersection_points_map;
     IndexedMesh mesh;
 };
@@ -130,20 +132,16 @@ inline void collide_func_process_intersection(
     {
         if (auto p = boost::get<Point>(&(*result)))
         {
-            data->mutex.lock();
-            out[primID0].push_back({geomID0, primID0, *p});
-            out[primID1].push_back({geomID1, primID1, *p});
-            data->mutex.unlock();
+            data->intersection_points.push_back({geomID0, primID0, *p});
+            data->intersection_points.push_back({geomID1, primID1, *p});
         }
         else if (auto s = boost::get<Segment>(&(*result)))
         {
-            data->mutex.lock();
-            out[primID0].push_back({geomID0, primID0, s->vertex(0)});
-            out[primID0].push_back({geomID0, primID0, s->vertex(1)});
-
-            out[primID1].push_back({geomID1, primID1, s->vertex(0)});
-            out[primID1].push_back({geomID1, primID1, s->vertex(1)});
-            data->mutex.unlock();
+            for (int i = 0; i < 2; i++)
+            {
+                data->intersection_points.push_back({geomID0, primID0, s->vertex(i)});
+                data->intersection_points.push_back({geomID1, primID1, s->vertex(i)});
+            }
         }
     }
 }

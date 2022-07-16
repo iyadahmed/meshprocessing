@@ -1,5 +1,6 @@
 #include <embree3/rtcore.h>
 #include <vector>
+#include <execution>
 #include <iostream>
 #include <limits>
 
@@ -25,7 +26,7 @@ int main(int argc, char *argv[])
     RTCScene scene = rtcNewScene(device);
 
     // Data MUST be allocated on heap to be shared between threads
-    IntersectionData *data = new IntersectionData{};
+    IntersectionData *data = new IntersectionData;
 
     stl::read_stl(filepath_1, data->tri_soup);
     stl::read_stl(filepath_2, data->tri_soup);
@@ -63,7 +64,18 @@ int main(int argc, char *argv[])
     Timer timer;
     rtcCollide(scene, scene, collide_func_indexed_mesh, data);
     timer.tock("rtcCollide");
-    std::cout << data->intersection_points_map.size() << std::endl;
+
+    rtcReleaseScene(scene);
+    rtcReleaseDevice(device);
+
+    timer.tick();
+    std::sort(std::execution::par, data->intersection_points.begin(), data->intersection_points.end(), [](const IntersectionPoint &a, const IntersectionPoint &b)
+              { return a.primID < b.primID; });
+    timer.tock("Sorting intersection points");
+
+    delete data;
+
+    return 0;
 
     // You can try to get rid of the map of vectors, and sort the intersection points instead,
     // and triangulate in a linear scan, but the logic is more complicated
