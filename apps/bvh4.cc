@@ -137,5 +137,7 @@ int main(int argc, char **argv)
     subdivide(nodes, root, tris, 1);
     std::cout << count(root) << std::endl;
 
+    delete [] nodes;
+
     return 0;
 }
