@@ -30,10 +30,16 @@ int main(int argc, char *argv[])
 
     stl::read_stl(filepath_1, data->tri_soup);
     stl::read_stl(filepath_2, data->tri_soup);
+    std::cout << "Num tris = " << data->tri_soup.size() << std::endl;
+
     data->cgal_tris.reserve(data->tri_soup.size());
     for (const auto &t : data->tri_soup)
     {
-        data->cgal_tris.push_back(to_cgal_triangle(t));
+        auto t_cgal = to_cgal_triangle(t);
+        if (!t_cgal.is_degenerate())
+        {
+            data->cgal_tris.push_back(t_cgal);
+        }
     }
 
     data->intersection_points.reserve(data->tri_soup.size());
