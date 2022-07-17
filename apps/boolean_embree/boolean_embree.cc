@@ -73,6 +73,17 @@ int main(int argc, char *argv[])
               { return a.primID < b.primID; });
     timer.tock("Sorting intersection points");
 
+    std::ofstream file("foo.pts", std::ios::binary);
+    for (const auto &ip : data->intersection_points)
+    {
+        double x = CGAL::to_double(ip.p.x());
+        double y = CGAL::to_double(ip.p.y());
+        double z = CGAL::to_double(ip.p.z());
+        file.write((char *)(&x), sizeof(double));
+        file.write((char *)(&y), sizeof(double));
+        file.write((char *)(&z), sizeof(double));
+    }
+
     delete data;
 
     return 0;
