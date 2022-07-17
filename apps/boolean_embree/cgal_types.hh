@@ -55,26 +55,22 @@ inline Segment to_cgal_segment(const Vec3 &a, const Vec3 &b)
     };
 }
 
+inline bool is_duplicate(const Point &a, const Point &b)
+{
+    return (a - b).squared_length() <= .00001;
+}
+
 inline bool has_point(const Triangle &t, const Point &p)
 {
-    for (int i = 0; i < 3; i++)
-    {
-        if ((t.vertex(i) - p).squared_length() <= .00001)
-        {
-            return true;
-        }
-    }
-    return false;
+    return is_duplicate(t.vertex(0), p) || is_duplicate(t.vertex(1), p) || is_duplicate(t.vertex(2), p);
 }
 
 inline bool has_shared_point(const Triangle &t1, const Triangle &t2)
 {
-    for (int i = 0; i < 3; i++)
-    {
-        if (has_point(t1, t2.vertex(i)))
-        {
-            return true;
-        }
-    }
-    return false;
+    return has_point(t1, t2.vertex(0)) || has_point(t1, t2.vertex(1)) || has_point(t1, t2.vertex(2));
+}
+
+inline bool is_linked_to_segment(const Triangle &t, const Segment &s)
+{
+    return has_point(t, s.vertex(0)) || has_point(t, s.vertex(1));
 }
