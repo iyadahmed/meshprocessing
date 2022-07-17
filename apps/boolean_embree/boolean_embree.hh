@@ -63,17 +63,26 @@ inline void collide_func_cgal_tris(void *user_data_ptr, RTCCollision *collisions
 
         const auto &t1 = data->cgal_tris[primID0];
         const auto &t2 = data->cgal_tris[primID1];
-        if (CGAL::do_intersect(t1, t2))
+        if (has_shared_point(t1, t2))
         {
-            auto result = CGAL::intersection(t1, t2);
-            if (result)
-            {
-                if (auto s = boost::get<Segment>(&(*result)))
-                {
-                    data->intersection_points.push_back({geomID0, primID0, s->vertex(0)});
-                    data->intersection_points.push_back({geomID0, primID0, s->vertex(1)});
-                }
-            }
+            // Skip intersection pair if the the two triangles share a point
+            continue;
+        }
+        if (!CGAL::do_intersect(t1, t2))
+        {
+            // Skip if they don't intersect
+            continue;
+        }
+        auto result = CGAL::intersection(t1, t2);
+        if (!result)
+        {
+            continue;
+        }
+        // TODO: check all intersection cases (Segment, Triangle, Point, std::vector<Point>)
+        if (auto s = boost::get<Segment>(&(*result)))
+        {
+            data->intersection_points.push_back({geomID0, primID0, s->vertex(0)});
+            data->intersection_points.push_back({geomID0, primID0, s->vertex(1)});
         }
     }
 }

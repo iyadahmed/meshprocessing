@@ -54,3 +54,27 @@ inline Segment to_cgal_segment(const Vec3 &a, const Vec3 &b)
         {b.x, b.y, b.z},
     };
 }
+
+inline bool has_point(const Triangle &t, const Point &p)
+{
+    for (int i = 0; i < 3; i++)
+    {
+        if ((t.vertex(i) - p).squared_length() <= .00001)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+inline bool has_shared_point(const Triangle &t1, const Triangle &t2)
+{
+    for (int i = 0; i < 3; i++)
+    {
+        if (has_point(t1, t2.vertex(i)))
+        {
+            return true;
+        }
+    }
+    return false;
+}
