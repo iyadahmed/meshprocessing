@@ -30,18 +30,13 @@ int main(int argc, char *argv[])
 
     stl::read_stl(filepath_1, data->tri_soup);
     stl::read_stl(filepath_2, data->tri_soup);
-
+    data->cgal_tris.reserve(data->tri_soup.size());
+    for (const auto &t : data->tri_soup)
     {
-        ScopedTimer scoped_timer("IndexedMesh");
-        for (const auto &t : data->tri_soup)
-        {
-            Vec3 *verts = (Vec3 *)t.verts;
-            data->mesh.add_triangle(verts[0], verts[1], verts[2]);
-        }
+        data->cgal_tris.push_back({{t.verts[0][0], t.verts[0][1], t.verts[0][2]},
+                                   {t.verts[1][0], t.verts[1][1], t.verts[1][2]},
+                                   {t.verts[2][0], t.verts[2][1], t.verts[2][2]}});
     }
-
-    std::cout << data->tri_soup.size() << std::endl;
-    std::cout << data->mesh.verts.size() << std::endl;
 
     data->intersection_points.reserve(data->tri_soup.size());
 
@@ -49,7 +44,7 @@ int main(int argc, char *argv[])
     unsigned int geomID = rtcAttachGeometry(scene, geom);
     rtcSetGeometryUserPrimitiveCount(geom, data->tri_soup.size());
     rtcSetGeometryUserData(geom, data);
-    rtcSetGeometryBoundsFunction(geom, triangle_bounds_func_indexed_mesh, nullptr);
+    rtcSetGeometryBoundsFunction(geom, triangle_bounds_func_cgal_tris, nullptr);
     // rtcSetGeometryIntersectFunction(geom, triangle_intersect_func);
     rtcCommitGeometry(geom);
     rtcReleaseGeometry(geom);
@@ -62,7 +57,7 @@ int main(int argc, char *argv[])
 
     // Perform self intersection
     Timer timer;
-    rtcCollide(scene, scene, collide_func_indexed_mesh, data);
+    rtcCollide(scene, scene, collide_func_cgal_tris, data);
     timer.tock("rtcCollide");
 
     rtcReleaseScene(scene);

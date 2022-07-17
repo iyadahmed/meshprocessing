@@ -12,6 +12,8 @@ elseif(UNIX)
     set(EMBREE_LINK_TARGET embree3)
 endif()
 
+add_subdirectory(boolean_embree)
+
 add_executable(stl_stats stl_stats.cc)
 target_compile_features(stl_stats PRIVATE cxx_std_17)
 target_link_libraries(stl_stats PRIVATE stl vec3)
@@ -28,13 +30,7 @@ add_executable(boolean3 boolean3.cc)
 target_compile_features(boolean3 PRIVATE cxx_std_17)
 target_link_libraries(boolean3 PRIVATE timers stl CGAL::CGAL)
 
-add_executable(boolean_embree
-    boolean_embree/boolean_embree.cc
-    boolean_embree/boolean_embree.hh
-    boolean_embree/indexed_mesh.hh
-)
-target_compile_features(boolean_embree PRIVATE cxx_std_17)
-target_link_libraries(boolean_embree PRIVATE timers stl vec3 CGAL::CGAL TBB::tbb ${EMBREE_LINK_TARGET})
+
 
 add_executable(boolean5 boolean5.cc boolean5.hh)
 target_compile_features(boolean5 PRIVATE cxx_std_17)
