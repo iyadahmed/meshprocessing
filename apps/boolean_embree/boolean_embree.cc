@@ -38,7 +38,10 @@ int main(int argc, char *argv[])
         auto t_cgal = to_cgal_triangle(t);
         if (!t_cgal.is_degenerate())
         {
-            data->cgal_tris.push_back(t_cgal);
+            Segment s1 = {t_cgal.vertex(0), t_cgal.vertex(1)};
+            Segment s2 = {t_cgal.vertex(1), t_cgal.vertex(2)};
+            Segment s3 = {t_cgal.vertex(2), t_cgal.vertex(0)};
+            data->cgal_tris.push_back({t_cgal, s1, s2, s3});
         }
     }
 

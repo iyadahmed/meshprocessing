@@ -26,12 +26,18 @@ struct IntersectionPoint
     Point p;
 };
 
+struct CGALTri
+{
+    Triangle t;
+    Segment segments[3];
+};
+
 struct IntersectionData
 {
     std::mutex mutex;
     std::vector<stl::Triangle> tri_soup;
     tbb::concurrent_vector<IntersectionPoint> intersection_points;
-    std::vector<Triangle> cgal_tris;
+    std::vector<CGALTri> cgal_tris;
 };
 
 inline Triangulation::Point project_point(const Point &a, const Triangle &t)
@@ -62,27 +68,33 @@ inline void collide_func_cgal_tris(void *user_data_ptr, RTCCollision *collisions
         }
 
         const auto &t1 = data->cgal_tris[primID0];
-        const auto &t2 = data->cgal_tris[primID1];
-        if (has_shared_point(t1, t2))
+        const auto &t2_cgal = data->cgal_tris[primID1].t;
+
+        for (int si = 0; si < 3; si++)
         {
-            // Skip intersection pair if the the two triangles share a point
-            continue;
-        }
-        if (!CGAL::do_intersect(t1, t2))
-        {
-            // Skip if they don't intersect
-            continue;
-        }
-        auto result = CGAL::intersection(t1, t2);
-        if (!result)
-        {
-            continue;
-        }
-        // TODO: check all intersection cases (Segment, Triangle, Point, std::vector<Point>)
-        if (auto s = boost::get<Segment>(&(*result)))
-        {
-            data->intersection_points.push_back({geomID0, primID0, s->vertex(0)});
-            data->intersection_points.push_back({geomID0, primID0, s->vertex(1)});
+            const auto &s = t1.segments[si];
+            if (is_linked_to_segment(t2_cgal, s))
+            {
+                continue;
+            }
+            if (!CGAL::do_intersect(s, t2_cgal))
+            {
+                continue;
+            }
+            auto result = CGAL::intersection(s, t2_cgal);
+            if (!result)
+            {
+                continue;
+            }
+            if (auto result_segment = boost::get<Segment>(&(*result)))
+            {
+                data->intersection_points.push_back({geomID0, primID0, result_segment->vertex(0)});
+                data->intersection_points.push_back({geomID0, primID0, result_segment->vertex(1)});
+            }
+            else if (auto result_point = boost::get<Point>(&(*result)))
+            {
+                data->intersection_points.push_back({geomID0, primID0, *result_point});
+            }
         }
     }
 }
@@ -90,7 +102,7 @@ inline void collide_func_cgal_tris(void *user_data_ptr, RTCCollision *collisions
 void triangle_bounds_func_cgal_tris(const struct RTCBoundsFunctionArguments *args)
 {
     IntersectionData *data = (IntersectionData *)args->geometryUserPtr;
-    const auto &t = data->cgal_tris[args->primID];
+    const auto &t = data->cgal_tris[args->primID].t;
     args->bounds_o->lower_x = t.bbox().min(0);
     args->bounds_o->lower_y = t.bbox().min(1);
     args->bounds_o->lower_z = t.bbox().min(2);
