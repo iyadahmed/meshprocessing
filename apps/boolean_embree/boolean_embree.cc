@@ -83,58 +83,59 @@ int main(int argc, char *argv[])
         file.write((char *)(&z), sizeof(double));
     }
 
-    // You can try to get rid of the map of vectors, and sort the intersection points instead,
-    // and triangulate in a linear scan, but the logic is more complicated
-    // timer.tick();
-    // std::sort(data->intersection_points.begin(), data->intersection_points.end(), [](const IntersectionPoint &a, const IntersectionPoint &b)
-    //           { return a.primID < b.primID; });
-    // timer.tock("Sorting intersection points by primtivie id");
+    Triangulation triangulation;
+    std::vector<std::pair<Triangulation::Point, TriangulationPointInfo>> triangulation_input;
+    std::vector<stl::Triangle> out;
+    stl::Triangle tri_buf;
+    const auto &ips = data->intersection_points;
+    timer.tick();
+    if (ips.size() >= 1)
+    {
+        auto prev_prim_id = ips[0].primID;
+        for (const auto &ip : ips)
+        {
+            if (ip.primID != prev_prim_id)
+            {
+                triangulation.clear();
+                for (int i = 0; i < 3; i++)
+                {
+                    const auto &p3d = data->cgal_tris[prev_prim_id].t.vertex(i);
+                    auto p2d = project_point(p3d, data->cgal_tris[prev_prim_id].t);
+                    TriangulationPointInfo info{p3d};
+                    triangulation_input.push_back({p2d, info});
+                }
+                triangulation.insert(triangulation_input.begin(), triangulation_input.end());
+                for (auto it = triangulation.finite_faces_begin(); it != triangulation.finite_faces_end(); it++)
+                {
+                    for (int i = 0; i < 3; i++)
+                    {
+                        for (int j = 0; j < 3; j++)
+                        {
+                            tri_buf.verts[i][j] = CGAL::to_double(it->vertex(i)->info().point_3d[j]);
+                        }
+                    }
+                    out.push_back(tri_buf);
+                }
+                triangulation_input.clear();
+                const auto &p3d = ip.p;
+                auto p2d = project_point(p3d, data->cgal_tris[ip.primID].t);
+                TriangulationPointInfo info{p3d};
+                triangulation_input.push_back({p2d, info});
+                prev_prim_id = ip.primID;
+            }
+            else
+            {
+                const auto &p3d = ip.p;
+                auto p2d = project_point(p3d, data->cgal_tris[ip.primID].t);
+                TriangulationPointInfo info{p3d};
+                triangulation_input.push_back({p2d, info});
+            }
+        }
+    }
+    timer.tock("Triangulation");
 
-    // for (int i = 0; (i < 100) && (i < data->intersection_points.size()); i++)
-    // {
-    //     auto ip = data->intersection_points[i];
-    //     std::cout << ip.p << " " << ip.primID << std::endl;
-    // }
-
-    // std::vector<stl::Triangle> out;
-    // stl::Triangle tri_buf;
-    // timer.tick();
-    // for (const auto &it : data->intersection_points_map)
-    // {
-    //     std::vector<std::pair<Triangulation::Point, TriangulationPointInfo>> triangulation_input;
-    //     const auto triangle = to_cgal_triangle(data->tri_soup[it.first]);
-    //     for (int i = 0; i < 3; i++)
-    //     {
-    //         const auto &p3d = triangle.vertex(i);
-    //         auto p2d = project_point(p3d, triangle);
-    //         TriangulationPointInfo info{p3d};
-    //         triangulation_input.push_back({p2d, info});
-    //     }
-    //     for (const auto &ip : it.second)
-    //     {
-    //         const auto &p3d = ip.p;
-    //         auto p2d = project_point(p3d, triangle);
-    //         TriangulationPointInfo info{p3d};
-    //         triangulation_input.push_back({p2d, info});
-    //     }
-
-    //     Triangulation triangulation(triangulation_input.begin(), triangulation_input.end());
-    //     for (auto it = triangulation.finite_faces_begin(); it != triangulation.finite_faces_end(); it++)
-    //     {
-    //         for (int i = 0; i < 3; i++)
-    //         {
-    //             for (int j = 0; j < 3; j++)
-    //             {
-    //                 tri_buf.verts[i][j] = CGAL::to_double(it->vertex(i)->info().point_3d[j]);
-    //             }
-    //         }
-    //         out.push_back(tri_buf);
-    //     }
-    // }
-    // timer.tock("Triangulation");
-
-    // std::cout << out.size() << std::endl;
-    // stl::write_stl(out, "foo.stl");
+    std::cout << out.size() << std::endl;
+    stl::write_stl(out, "foo.stl");
 
     rtcReleaseScene(scene);
     rtcReleaseDevice(device);
