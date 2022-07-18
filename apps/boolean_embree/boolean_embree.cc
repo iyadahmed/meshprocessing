@@ -11,6 +11,29 @@
 
 using namespace mp::io;
 
+static inline void write_point(std::ofstream &file, const Point &p)
+{
+    double x = CGAL::to_double(p.x());
+    double y = CGAL::to_double(p.y());
+    double z = CGAL::to_double(p.z());
+    file.write((char *)(&x), sizeof(double));
+    file.write((char *)(&y), sizeof(double));
+    file.write((char *)(&z), sizeof(double));
+}
+
+static inline stl::Triangle to_stl_triangle(Triangulation::Finite_faces_iterator &it)
+{
+    stl::Triangle out;
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            out.verts[i][j] = CGAL::to_double(it->vertex(i)->info().point_3d[j]);
+        }
+    }
+    return out;
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 3)
@@ -36,7 +59,7 @@ int main(int argc, char *argv[])
     for (const auto &t : data->tri_soup)
     {
         auto t_cgal = to_cgal_triangle(t);
-        if (!t_cgal.is_degenerate())
+        if (!t_cgal.is_degenerate()) // Only keep non-degenerate triangles
         {
             Segment s1 = {t_cgal.vertex(0), t_cgal.vertex(1)};
             Segment s2 = {t_cgal.vertex(1), t_cgal.vertex(2)};
@@ -50,6 +73,7 @@ int main(int argc, char *argv[])
     rtcSetGeometryUserPrimitiveCount(geom, data->tri_soup.size());
     rtcSetGeometryUserData(geom, data);
     rtcSetGeometryBoundsFunction(geom, triangle_bounds_func_cgal_tris, nullptr);
+    // TODO: set ray triangle intersection function
     // rtcSetGeometryIntersectFunction(geom, triangle_intersect_func);
     rtcCommitGeometry(geom);
     rtcReleaseGeometry(geom);
@@ -60,28 +84,20 @@ int main(int argc, char *argv[])
      */
     rtcCommitScene(scene);
 
-    // Perform self intersection
+    // Self intersection
     Timer timer;
     rtcCollide(scene, scene, collide_func_cgal_tris, data);
-    timer.tock("Calculating intersection points");
+    timer.tock("Calculating self-intersection points");
 
-    // std::ofstream file("boolean_embree_intersection_points.pts", std::ios::binary);
-    // for (const auto &ip : data->intersection_points)
-    // {
-    //     double x = CGAL::to_double(ip.p.x());
-    //     double y = CGAL::to_double(ip.p.y());
-    //     double z = CGAL::to_double(ip.p.z());
-    //     file.write((char *)(&x), sizeof(double));
-    //     file.write((char *)(&y), sizeof(double));
-    //     file.write((char *)(&z), sizeof(double));
-    // }
-
+    // Triangulation
     timer.tick();
     std::vector<stl::Triangle> out;
     stl::Triangle tri_buf;
     for (auto &prim_id_intersection_points_pair : data->intersection_points_map)
     {
         const auto &t = data->cgal_tris[prim_id_intersection_points_pair.first].t;
+        // Include original triangle points in the triangulation
+        // not just intersecion points
         for (int i = 0; i < 3; i++)
         {
             auto p = t.vertex(i);
@@ -92,14 +108,7 @@ int main(int argc, char *argv[])
         Triangulation triangulation(prim_id_intersection_points_pair.second.begin(), prim_id_intersection_points_pair.second.end());
         for (auto it = triangulation.finite_faces_begin(); it != triangulation.finite_faces_end(); it++)
         {
-            for (int i = 0; i < 3; i++)
-            {
-                for (int j = 0; j < 3; j++)
-                {
-                    tri_buf.verts[i][j] = CGAL::to_double(it->vertex(i)->info().point_3d[j]);
-                }
-            }
-            out.push_back(tri_buf);
+            out.push_back(to_stl_triangle(it));
         }
     }
     timer.tock("Triangulation");
