@@ -3,6 +3,7 @@
 #include <execution>
 #include <iostream>
 #include <limits>
+#include <fstream>
 
 #include "stl_io.hh"
 #include "boolean_embree.hh"
