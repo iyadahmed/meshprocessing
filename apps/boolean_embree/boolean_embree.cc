@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 
     stl::read_stl(filepath_1, data->tri_soup);
     stl::read_stl(filepath_2, data->tri_soup);
-    std::cout << "Num tris = " << data->tri_soup.size() << std::endl;
+    std::cout << "Number of Input Triangles = " << data->tri_soup.size() << std::endl;
 
     data->cgal_tris.reserve(data->tri_soup.size());
     for (const auto &t : data->tri_soup)
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
     // Perform self intersection
     Timer timer;
     rtcCollide(scene, scene, collide_func_cgal_tris, data);
-    timer.tock("rtcCollide");
+    timer.tock("Calculating intersection points ");
 
     timer.tick();
     std::sort(std::execution::par, data->intersection_points.begin(), data->intersection_points.end(), [](const IntersectionPoint &a, const IntersectionPoint &b)
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
     }
     timer.tock("Triangulation");
 
-    std::cout << out.size() << std::endl;
+    std::cout << "Number of output triangles = " << out.size() << std::endl;
     stl::write_stl(out, "foo.stl");
 
     rtcReleaseScene(scene);
