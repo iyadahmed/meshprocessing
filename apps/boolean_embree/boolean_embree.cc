@@ -45,8 +45,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    data->intersection_points.reserve(data->tri_soup.size());
-
     RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
     unsigned int geomID = rtcAttachGeometry(scene, geom);
     rtcSetGeometryUserPrimitiveCount(geom, data->tri_soup.size());
@@ -65,77 +63,49 @@ int main(int argc, char *argv[])
     // Perform self intersection
     Timer timer;
     rtcCollide(scene, scene, collide_func_cgal_tris, data);
-    timer.tock("Calculating intersection points ");
+    timer.tock("Calculating intersection points");
+
+    // std::ofstream file("boolean_embree_intersection_points.pts", std::ios::binary);
+    // for (const auto &ip : data->intersection_points)
+    // {
+    //     double x = CGAL::to_double(ip.p.x());
+    //     double y = CGAL::to_double(ip.p.y());
+    //     double z = CGAL::to_double(ip.p.z());
+    //     file.write((char *)(&x), sizeof(double));
+    //     file.write((char *)(&y), sizeof(double));
+    //     file.write((char *)(&z), sizeof(double));
+    // }
 
     timer.tick();
-    std::sort(std::execution::par, data->intersection_points.begin(), data->intersection_points.end(), [](const IntersectionPoint &a, const IntersectionPoint &b)
-              { return a.primID < b.primID; });
-    timer.tock("Sorting intersection points");
-
-    std::ofstream file("foo.pts", std::ios::binary);
-    for (const auto &ip : data->intersection_points)
-    {
-        double x = CGAL::to_double(ip.p.x());
-        double y = CGAL::to_double(ip.p.y());
-        double z = CGAL::to_double(ip.p.z());
-        file.write((char *)(&x), sizeof(double));
-        file.write((char *)(&y), sizeof(double));
-        file.write((char *)(&z), sizeof(double));
-    }
-
-    Triangulation triangulation;
-    std::vector<std::pair<Triangulation::Point, TriangulationPointInfo>> triangulation_input;
     std::vector<stl::Triangle> out;
     stl::Triangle tri_buf;
-    const auto &ips = data->intersection_points;
-    timer.tick();
-    if (ips.size() >= 1)
+    for (auto &prim_id_intersection_points_pair : data->intersection_points_map)
     {
-        auto prev_prim_id = ips[0].primID;
-        for (const auto &ip : ips)
+        const auto &t = data->cgal_tris[prim_id_intersection_points_pair.first].t;
+        for (int i = 0; i < 3; i++)
         {
-            if (ip.primID != prev_prim_id)
+            auto p = t.vertex(i);
+            TriangulationPointInfo info{p};
+            auto p2d = project_point(p, t);
+            prim_id_intersection_points_pair.second.push_back({p2d, info});
+        }
+        Triangulation triangulation(prim_id_intersection_points_pair.second.begin(), prim_id_intersection_points_pair.second.end());
+        for (auto it = triangulation.finite_faces_begin(); it != triangulation.finite_faces_end(); it++)
+        {
+            for (int i = 0; i < 3; i++)
             {
-                triangulation.clear();
-                for (int i = 0; i < 3; i++)
+                for (int j = 0; j < 3; j++)
                 {
-                    const auto &p3d = data->cgal_tris[prev_prim_id].t.vertex(i);
-                    auto p2d = project_point(p3d, data->cgal_tris[prev_prim_id].t);
-                    TriangulationPointInfo info{p3d};
-                    triangulation_input.push_back({p2d, info});
+                    tri_buf.verts[i][j] = CGAL::to_double(it->vertex(i)->info().point_3d[j]);
                 }
-                triangulation.insert(triangulation_input.begin(), triangulation_input.end());
-                for (auto it = triangulation.finite_faces_begin(); it != triangulation.finite_faces_end(); it++)
-                {
-                    for (int i = 0; i < 3; i++)
-                    {
-                        for (int j = 0; j < 3; j++)
-                        {
-                            tri_buf.verts[i][j] = CGAL::to_double(it->vertex(i)->info().point_3d[j]);
-                        }
-                    }
-                    out.push_back(tri_buf);
-                }
-                triangulation_input.clear();
-                const auto &p3d = ip.p;
-                auto p2d = project_point(p3d, data->cgal_tris[ip.primID].t);
-                TriangulationPointInfo info{p3d};
-                triangulation_input.push_back({p2d, info});
-                prev_prim_id = ip.primID;
             }
-            else
-            {
-                const auto &p3d = ip.p;
-                auto p2d = project_point(p3d, data->cgal_tris[ip.primID].t);
-                TriangulationPointInfo info{p3d};
-                triangulation_input.push_back({p2d, info});
-            }
+            out.push_back(tri_buf);
         }
     }
     timer.tock("Triangulation");
 
     std::cout << "Number of output triangles = " << out.size() << std::endl;
-    stl::write_stl(out, "foo.stl");
+    stl::write_stl(out, "boolean_embree_output.stl");
 
     rtcReleaseScene(scene);
     rtcReleaseDevice(device);

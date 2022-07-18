@@ -10,21 +10,14 @@
 
 #include <embree3/rtcore.h>
 #include <vector>
-#include <unordered_map>
 #include <mutex>
 #include <tbb/concurrent_vector.h>
+#include <tbb/concurrent_unordered_map.h>
 
 #include "stl_io.hh"
 #include "vec3.hh"
 #include "indexed_mesh.hh"
 #include "cgal_types.hh"
-
-/* Point of intersection alongside indices of the mesh and triangle it came from */
-struct IntersectionPoint
-{
-    unsigned geomID, primID;
-    Point p;
-};
 
 struct CGALTri
 {
@@ -32,12 +25,22 @@ struct CGALTri
     Segment segments[3];
 };
 
+
+// Stores input and output data for rtcCollide,
+// must be allocated on memory that can be shared between threads,
+// like the heap
 struct IntersectionData
 {
     std::mutex mutex;
     std::vector<stl::Triangle> tri_soup;
-    tbb::concurrent_vector<IntersectionPoint> intersection_points;
     std::vector<CGALTri> cgal_tris;
+    // NOTE: you can get rid of the map of vectors, by storing in a linear vector of intersection points,
+    // then after collision is finished, you can sort that vector by primitive id,
+    // so that all points that belong to the same triangle are consequtive,
+    // make sure to store the primtive id along side each point so you can use it to sort,
+    // also make sure to store two copies of the intersection point, one for each of the intersecting triangle pairs
+    // a map of vectors was chosen in the end because it reduced code complexity, and had near zero impact on performance
+    tbb::concurrent_unordered_map<unsigned int, tbb::concurrent_vector<std::pair<Triangulation::Point, TriangulationPointInfo>>> intersection_points_map;
 };
 
 inline Triangulation::Point project_point(const Point &a, const Triangle &t)
@@ -68,10 +71,13 @@ inline void collide_func_cgal_tris(void *user_data_ptr, RTCCollision *collisions
         }
 
         const auto &t1 = data->cgal_tris[primID0];
+        const auto &t1_cgal = t1.t;
         const auto &t2_cgal = data->cgal_tris[primID1].t;
 
         for (int si = 0; si < 3; si++)
         {
+            // TODO: write a better intersection "kernel"
+            // that handles coplanar cases and has tolerance
             const auto &s = t1.segments[si];
             if (is_linked_to_segment(t2_cgal, s))
             {
@@ -88,17 +94,36 @@ inline void collide_func_cgal_tris(void *user_data_ptr, RTCCollision *collisions
             }
             if (auto result_segment = boost::get<Segment>(&(*result)))
             {
-                data->intersection_points.push_back({geomID0, primID0, result_segment->vertex(0)});
-                data->intersection_points.push_back({geomID0, primID0, result_segment->vertex(1)});
+                auto a_3d = result_segment->vertex(0);
+                TriangulationPointInfo a_info{a_3d};
+                auto a_2d_t1 = project_point(a_3d, t1_cgal);
+                auto a_2d_t2 = project_point(a_3d, t2_cgal);
+
+                auto b_3d = result_segment->vertex(1);
+                TriangulationPointInfo b_info{b_3d};
+                auto b_2d_t1 = project_point(b_3d, t1_cgal);
+                auto b_2d_t2 = project_point(b_3d, t2_cgal);
+                data->intersection_points_map[primID0].push_back({a_2d_t1, a_info});
+                data->intersection_points_map[primID0].push_back({b_2d_t1, b_info});
+
+                data->intersection_points_map[primID1].push_back({a_2d_t2, a_info});
+                data->intersection_points_map[primID1].push_back({b_2d_t2, b_info});
             }
             else if (auto result_point = boost::get<Point>(&(*result)))
             {
-                data->intersection_points.push_back({geomID0, primID0, *result_point});
+                auto a_3d = *result_point;
+                TriangulationPointInfo a_info{a_3d};
+                auto a_2d_t1 = project_point(a_3d, t1_cgal);
+                auto a_2d_t2 = project_point(a_3d, t2_cgal);
+
+                data->intersection_points_map[primID0].push_back({a_2d_t1, a_info});
+                data->intersection_points_map[primID1].push_back({a_2d_t2, a_info});
             }
         }
     }
 }
 
+// TODO: should a tolerance be added here?
 void triangle_bounds_func_cgal_tris(const struct RTCBoundsFunctionArguments *args)
 {
     IntersectionData *data = (IntersectionData *)args->geometryUserPtr;
