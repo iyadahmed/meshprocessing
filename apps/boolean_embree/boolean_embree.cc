@@ -35,6 +35,19 @@ static inline stl::Triangle to_stl_triangle(Triangulation::Finite_faces_iterator
     return out;
 }
 
+static inline stl::Triangle to_stl_triangle(const Triangle &t)
+{
+    stl::Triangle out;
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            out.verts[i][j] = CGAL::to_double(t.vertex(i)[j]);
+        }
+    }
+    return out;
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 3)
@@ -94,9 +107,15 @@ int main(int argc, char *argv[])
     timer.tick();
     std::vector<stl::Triangle> out;
     stl::Triangle tri_buf;
+    std::vector<bool> is_triangulated(data->cgal_tris.size(), false);
     for (auto &prim_id_intersection_points_pair : data->intersection_points_map)
     {
-        const auto &t = data->cgal_tris[prim_id_intersection_points_pair.first].t;
+        unsigned int tri_index = prim_id_intersection_points_pair.first;
+        auto &triangulation_input = prim_id_intersection_points_pair.second;
+
+        is_triangulated[tri_index] = true;
+
+        const auto &t = data->cgal_tris[tri_index].t;
         // Include original triangle points in the triangulation
         // not just intersecion points
         for (int i = 0; i < 3; i++)
@@ -104,15 +123,23 @@ int main(int argc, char *argv[])
             auto p = t.vertex(i);
             TriangulationPointInfo info{p};
             auto p2d = project_point(p, t);
-            prim_id_intersection_points_pair.second.push_back({p2d, info});
+            triangulation_input.push_back({p2d, info});
         }
-        Triangulation triangulation(prim_id_intersection_points_pair.second.begin(), prim_id_intersection_points_pair.second.end());
+        Triangulation triangulation(triangulation_input.begin(), triangulation_input.end());
         for (auto it = triangulation.finite_faces_begin(); it != triangulation.finite_faces_end(); it++)
         {
             out.push_back(to_stl_triangle(it));
         }
     }
     timer.tock("Triangulation");
+
+    for (size_t i = 0; i < data->cgal_tris.size(); i++)
+    {
+        if (!is_triangulated[i])
+        {
+            out.push_back(to_stl_triangle(data->cgal_tris[i].t));
+        }
+    }
 
     std::cout << "Number of output triangles = " << out.size() << std::endl;
     stl::write_stl(out, "boolean_embree_output.stl");
