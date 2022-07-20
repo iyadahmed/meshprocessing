@@ -9,7 +9,7 @@
 #endif
 
 #ifdef NDEBUG
-#define tassert(x) ()
+#define tassert(x)
 #else
 #define tassert(x) \
     if (!(x))      \
@@ -239,18 +239,9 @@ inline void collide_func_cgal_tris(void *user_data_ptr, RTCCollision *collisions
             }
             else
             {
-                // Intersection is impossible
+                // Else case explicitly not handled
+                // as intersection is impossible if both segment vertices are on the same side of triangle plane
             }
-            // auto d1 = CGAL::squared_distance(s.vertex(0), t2_cgal.supporting_plane());
-            // auto d2 = CGAL::squared_distance(s.vertex(1), t2_cgal.supporting_plane());
-            // if ((d1 < .0001) && (d2 < .0001))
-            // {
-            //     // Edge is coplanar to triangle
-            // }
-            // if (is_linked_to_segment(t2_cgal, s))
-            // {
-            //     continue;
-            // }
         }
     }
 }
