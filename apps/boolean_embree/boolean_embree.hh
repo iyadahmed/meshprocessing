@@ -216,9 +216,13 @@ inline void collide_func_cgal_tris(void *user_data_ptr, RTCCollision *collisions
             {
                 auto t2_plane = t2_cgal.supporting_plane();
                 K::Ray_3 ray(s.vertex(0), s.vertex(1));
-                tassert(CGAL::do_intersect(ray, t2_plane));
+                // tassert(CGAL::do_intersect(ray, t2_plane));
                 auto result = CGAL::intersection(ray, t2_plane);
-                tassert(result);
+                if (!result)
+                {
+                    continue;
+                }
+                // tassert(result);
                 if (auto result_point = boost::get<Point>(&(*result)))
                 {
                     auto d = is_inside(to_vec3(*result_point),
@@ -234,7 +238,7 @@ inline void collide_func_cgal_tris(void *user_data_ptr, RTCCollision *collisions
                 }
                 else
                 {
-                    throw;
+                    // throw;
                 }
             }
             else
