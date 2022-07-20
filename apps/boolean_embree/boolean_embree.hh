@@ -38,7 +38,7 @@ struct IntersectionData
     // then after collision is finished, you can sort that vector by primitive id,
     // so that all points that belong to the same triangle are consequtive,
     // make sure to store the primtive id along side each point so you can use it to sort,
-    // also make sure to store two copies of the intersection point, one for each of the intersecting triangle pairs
+    // also make sure to store two copies of the intersection point, 2 intersection points for each two intersecting triangles
     // a map of vectors was chosen in the end because it reduced code complexity, and had near zero impact on performance
     tbb::concurrent_unordered_map<unsigned int, tbb::concurrent_vector<std::pair<Triangulation::Point, TriangulationPointInfo>>> intersection_points_map;
 };
