@@ -8,6 +8,16 @@
 #define unlikely(expr) __builtin_expect((bool)(expr), false)
 #endif
 
+#ifdef NDEBUG
+#define tassert(x) ()
+#else
+#define tassert(x) \
+    if (!(x))      \
+    {              \
+        throw;     \
+    }
+#endif
+
 #include <embree3/rtcore.h>
 #include <vector>
 #include <mutex>
@@ -24,7 +34,6 @@ struct CGALTri
     Triangle t;
     Segment segments[3];
 };
-
 
 // Stores input and output data for rtcCollide,
 // must be allocated on memory that can be shared between threads,
@@ -51,6 +60,68 @@ inline Triangulation::Point project_point(const Point &a, const Triangle &t)
     auto y = CGAL::scalar_product(a - CGAL::ORIGIN, basis_v2);
     return {x, y};
 }
+std::pair<Triangulation::Point, TriangulationPointInfo> to_ip(const Point &p, const Triangle &t)
+{
+    TriangulationPointInfo info{p};
+    auto p2d = project_point(p, t);
+    return {p2d, info};
+}
+
+// Compute barycentric coordinates (u, v, w) for
+// point p with respect to triangle (a, b, c)
+inline void barycentric(const Vec3 &p, const Vec3 &a, const Vec3 &b, const Vec3 &c, float &u, float &v, float &w)
+{
+    Vec3 v0 = b - a; // TODO: compute once per triangle
+    Vec3 v1 = c - a; // TODO: compute once per triangle
+    Vec3 v2 = p - a;
+    float d00 = dot(v0, v0);
+    float d01 = dot(v0, v1);
+    float d11 = dot(v1, v1);
+    float d20 = dot(v2, v0);
+    float d21 = dot(v2, v1);
+    float denom = d00 * d11 - d01 * d01;
+    v = (d11 * d20 - d01 * d21) / denom;
+    w = (d00 * d21 - d01 * d20) / denom;
+    u = 1.0f - v - w;
+}
+
+inline Vec3 to_barycentric(const Vec3 &p, const Vec3 &a, const Vec3 &b, const Vec3 &c)
+{
+    float u, v, w;
+    barycentric(p, a, b, c, u, v, w);
+    return {u, v, w};
+}
+
+inline bool is_inside(const Vec3 &p, const Vec3 &a, const Vec3 &b, const Vec3 &c, float tolerance)
+{
+    float u, v, w;
+    barycentric(p, a, b, c, u, v, w);
+    float upper = 1.0f + tolerance;
+    float lower = 0.0f - tolerance;
+    return (u >= lower) && (u <= upper) && (v >= lower) && (v <= upper) && (w >= lower) && (w <= upper);
+}
+
+int side(Vec3 p, Vec3 a, Vec3 b, Vec3 c, float tolerance)
+{
+    Vec3 v0 = b - a;            // TODO: compute once per triangle
+    Vec3 v1 = c - a;            // TODO: compute once per triangle
+    Vec3 normal = v0.cross(v1); // TODO: compute once per triangle
+    Vec3 v2 = p - a;
+    float d = v2.dot(normal);
+    if (std::abs(d) <= tolerance)
+    {
+        return true;
+    }
+
+    return (d > 0.0f) ? 1 : -1;
+}
+
+Vec3 to_vec3(Point p)
+{
+    return {(float)CGAL::to_double(p.x()),
+            (float)CGAL::to_double(p.y()),
+            (float)CGAL::to_double(p.z())};
+}
 
 inline void collide_func_cgal_tris(void *user_data_ptr, RTCCollision *collisions, unsigned int num_collisions)
 {
@@ -76,49 +147,110 @@ inline void collide_func_cgal_tris(void *user_data_ptr, RTCCollision *collisions
 
         for (int si = 0; si < 3; si++)
         {
-            // TODO: write a better intersection "kernel"
-            // that handles coplanar cases and has tolerance
+// TODO: get rid of CGAL types
+// TODO: use double precision
+#define TOL .0001f
             const auto &s = t1.segments[si];
-            if (is_linked_to_segment(t2_cgal, s))
+            auto side1 = side(to_vec3(s.vertex(0)),
+                              to_vec3(t2_cgal.vertex(0)),
+                              to_vec3(t2_cgal.vertex(1)),
+                              to_vec3(t2_cgal.vertex(2)),
+                              TOL);
+            auto side2 = side(to_vec3(s.vertex(1)),
+                              to_vec3(t2_cgal.vertex(0)),
+                              to_vec3(t2_cgal.vertex(1)),
+                              to_vec3(t2_cgal.vertex(2)),
+                              TOL);
+            if ((side1 == 0) && (side2 == 0))
             {
-                continue;
-            }
-            if (!CGAL::do_intersect(s, t2_cgal))
-            {
-                continue;
-            }
-            auto result = CGAL::intersection(s, t2_cgal);
-            if (!result)
-            {
-                continue;
-            }
-            if (auto result_segment = boost::get<Segment>(&(*result)))
-            {
-                auto a_3d = result_segment->vertex(0);
-                TriangulationPointInfo a_info{a_3d};
-                auto a_2d_t1 = project_point(a_3d, t1_cgal);
-                auto a_2d_t2 = project_point(a_3d, t2_cgal);
+                // Edge is coplanar with triangle2
+                auto sv1_is_inside = is_inside(to_vec3(s.vertex(0)),
+                                               to_vec3(t2_cgal.vertex(0)),
+                                               to_vec3(t2_cgal.vertex(1)),
+                                               to_vec3(t2_cgal.vertex(2)),
+                                               TOL);
+                auto sv2_is_inside = is_inside(to_vec3(s.vertex(1)),
+                                               to_vec3(t2_cgal.vertex(0)),
+                                               to_vec3(t2_cgal.vertex(1)),
+                                               to_vec3(t2_cgal.vertex(2)),
+                                               TOL);
+                if (sv1_is_inside && sv2_is_inside)
+                {
+                    data->intersection_points_map[primID0].push_back(to_ip(s.vertex(0), t1_cgal));
+                    data->intersection_points_map[primID0].push_back(to_ip(s.vertex(1), t1_cgal));
 
-                auto b_3d = result_segment->vertex(1);
-                TriangulationPointInfo b_info{b_3d};
-                auto b_2d_t1 = project_point(b_3d, t1_cgal);
-                auto b_2d_t2 = project_point(b_3d, t2_cgal);
-                data->intersection_points_map[primID0].push_back({a_2d_t1, a_info});
-                data->intersection_points_map[primID0].push_back({b_2d_t1, b_info});
+                    data->intersection_points_map[primID1].push_back(to_ip(s.vertex(0), t2_cgal));
+                    data->intersection_points_map[primID1].push_back(to_ip(s.vertex(1), t2_cgal));
+                }
+                else
+                {
+                    auto t2_plane = t2_cgal.supporting_plane();
+                    auto sv1_p = t2_plane.projection(s.vertex(0));
+                    auto sv2_p = t2_plane.projection(s.vertex(1));
+                    Segment projected_segment(sv1_p, sv2_p);
+                    if (!CGAL::do_intersect(projected_segment, t2_cgal))
+                    {
+                        continue;
+                    }
+                    auto result = CGAL::intersection(projected_segment, t2_cgal);
+                    if (!result)
+                    {
+                        continue;
+                    }
+                    if (auto result_segment = boost::get<Segment>(&(*result)))
+                    {
+                        data->intersection_points_map[primID0].push_back(to_ip(result_segment->vertex(0), t1_cgal));
+                        data->intersection_points_map[primID0].push_back(to_ip(result_segment->vertex(1), t1_cgal));
 
-                data->intersection_points_map[primID1].push_back({a_2d_t2, a_info});
-                data->intersection_points_map[primID1].push_back({b_2d_t2, b_info});
+                        data->intersection_points_map[primID1].push_back(to_ip(result_segment->vertex(0), t2_cgal));
+                        data->intersection_points_map[primID1].push_back(to_ip(result_segment->vertex(1), t2_cgal));
+                    }
+                    else if (auto result_point = boost::get<Point>(&(*result)))
+                    {
+                        data->intersection_points_map[primID0].push_back(to_ip(*result_point, t1_cgal));
+                        data->intersection_points_map[primID1].push_back(to_ip(*result_point, t2_cgal));
+                    }
+                }
             }
-            else if (auto result_point = boost::get<Point>(&(*result)))
+            else if (side1 != side2)
             {
-                auto a_3d = *result_point;
-                TriangulationPointInfo a_info{a_3d};
-                auto a_2d_t1 = project_point(a_3d, t1_cgal);
-                auto a_2d_t2 = project_point(a_3d, t2_cgal);
-
-                data->intersection_points_map[primID0].push_back({a_2d_t1, a_info});
-                data->intersection_points_map[primID1].push_back({a_2d_t2, a_info});
+                auto t2_plane = t2_cgal.supporting_plane();
+                K::Ray_3 ray(s.vertex(0), s.vertex(1));
+                tassert(CGAL::do_intersect(ray, t2_plane));
+                auto result = CGAL::intersection(ray, t2_plane);
+                tassert(result);
+                if (auto result_point = boost::get<Point>(&(*result)))
+                {
+                    auto d = is_inside(to_vec3(*result_point),
+                                       to_vec3(t2_cgal.vertex(0)),
+                                       to_vec3(t2_cgal.vertex(1)),
+                                       to_vec3(t2_cgal.vertex(2)),
+                                       TOL);
+                    if (d)
+                    {
+                        data->intersection_points_map[primID0].push_back(to_ip(*result_point, t1_cgal));
+                        data->intersection_points_map[primID1].push_back(to_ip(*result_point, t2_cgal));
+                    }
+                }
+                else
+                {
+                    throw;
+                }
             }
+            else
+            {
+                // Intersection is impossible
+            }
+            // auto d1 = CGAL::squared_distance(s.vertex(0), t2_cgal.supporting_plane());
+            // auto d2 = CGAL::squared_distance(s.vertex(1), t2_cgal.supporting_plane());
+            // if ((d1 < .0001) && (d2 < .0001))
+            // {
+            //     // Edge is coplanar to triangle
+            // }
+            // if (is_linked_to_segment(t2_cgal, s))
+            // {
+            //     continue;
+            // }
         }
     }
 }
