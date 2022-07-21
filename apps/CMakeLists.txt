@@ -3,14 +3,7 @@ find_package(TBB CONFIG REQUIRED)
 find_package(CGAL CONFIG REQUIRED)
 find_package(OpenMP REQUIRED)
 
-# TODO: Instead of checking OS, try both package and library and pick the one that succeed
-if(WIN32)
-    find_package(embree 3 REQUIRED)
-    set(EMBREE_LINK_TARGET embree)
-elseif(UNIX)
-    find_library(embree3 REQUIRED)
-    set(EMBREE_LINK_TARGET embree3)
-endif()
+set(EMBREE_LINK_TARGET embree3)
 
 add_subdirectory(boolean_embree)
 
