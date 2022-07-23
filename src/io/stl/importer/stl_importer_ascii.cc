@@ -1,5 +1,5 @@
 #include "stl_importer_ascii.hh"
-#include "string_buffer.hh"
+#include "../../string_buffer.hh"
 
 namespace mp::io::stl {
 void read_stl_ascii(std::ifstream &ifs, std::vector<Triangle> &tris) {
