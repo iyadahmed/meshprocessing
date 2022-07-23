@@ -29,8 +29,12 @@ int main(int argc, char **argv) {
 
   Timer t;
   BVH bvh(input_tris);
-  t.tock();
-  std::cout << bvh.count() << std::endl;
+  t.tock("Building BVH");
+  std::cout << "Number of BVH nodes = " << bvh.count() << std::endl;
+
+  t.tick();
+  bvh.self_overlap();
+  t.tock("Self overlap");
 
   return 0;
 }

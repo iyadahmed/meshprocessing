@@ -3,20 +3,13 @@
 #include <algorithm>
 #include <cmath>
 
-#include "vec3.hh"
 #include "../common.hh"
-
+#include "vec3.hh"
 
 struct BVHTriangle {
   Vec3 a, b, c;
-  Vec3 &operator[](size_t i)
-  {
-    return reinterpret_cast<Vec3 *>(&(*this))[i];
-  }
-  Vec3 centroid() const
-  {
-    return (a + b + c) / 3;
-  };
+  Vec3 &operator[](size_t i) { return reinterpret_cast<Vec3 *>(&(*this))[i]; }
+  Vec3 centroid() const { return (a + b + c) / 3; };
 };
 
 struct BVHRay {
@@ -24,11 +17,23 @@ struct BVHRay {
   float t = INFINITY;
 };
 
+inline bool all_gt(const Vec3 &a, const Vec3 &b) {
+  return (a.x > b.x) && (a.y > b.y) && (a.z > b.z);
+}
+
+inline bool all_lt(const Vec3 &a, const Vec3 &b) {
+  return (a.x < b.x) && (a.y < b.y) && (a.z < b.z);
+}
+
 struct BVHNode {
   BVHNode *L, *R;
   Vec3 aabb_max, aabb_min;
   std::vector<BVHTriangle>::iterator start, end;
   int count() const { return end - start + 1; }
+  bool does_overlap(const BVHNode &other) const {
+    return all_gt(aabb_max, other.aabb_min) &&
+           (all_lt(aabb_min, other.aabb_max));
+  }
 };
 
 void intersect_ray_tri(BVHRay &ray, const BVHTriangle &tri) {
@@ -67,6 +72,7 @@ bool intersect_ray_aabb(const BVHRay &ray, const Vec3 &bmin, const Vec3 &bmax) {
 class BVH {
 private:
   BVHNode *nodes_;
+  int num_used_nodes_;
 
   void recalc_bounds(BVHNode *node, const std::vector<BVHTriangle> &tris) {
     node->aabb_max = -INFINITY;
@@ -99,10 +105,9 @@ private:
     }
     float split_pos = root->aabb_min[split_axis] + dims[split_axis] * .5;
 
-    auto it =
-        std::partition(root->start, root->end, [=](const BVHTriangle &t) {
-          return t.centroid()[split_axis] < split_pos;
-        });
+    auto it = std::partition(root->start, root->end, [=](const BVHTriangle &t) {
+      return t.centroid()[split_axis] < split_pos;
+    });
 
     if ((it == root->start) || (it == root->end)) {
       // abort split
@@ -146,11 +151,34 @@ public:
     root->end = tris.end();
     root->L = root->R = nullptr;
     recalc_bounds(root, tris);
-
     subdivide(nodes_, root, tris, 1);
   }
 
   int count() const { return count_(nodes_); }
+
+  void overlap(const BVHNode &node, const BVHNode &other_node,
+               int &overlap_count) {
+    if (!node.does_overlap(other_node)) {
+      return;
+    }
+    overlap_count++;
+    if (other_node.L) {
+      overlap(node, *other_node.L, overlap_count);
+    }
+    if (other_node.R) {
+      overlap(node, *other_node.R, overlap_count);
+    }
+  }
+
+  void self_overlap() {
+    int overlap_count = 0;
+
+#pragma omp parallel for
+    for (int i = 0; i < count(); i++) {
+      overlap(nodes_[i], nodes_[0], overlap_count);
+    }
+    printf("Overlapping BVH nodes count = %d\n", overlap_count);
+  }
 
   ~BVH() { delete[] nodes_; }
   // void intersect_ray(BVHRay &ray, int node_index)
