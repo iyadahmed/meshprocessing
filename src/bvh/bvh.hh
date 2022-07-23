@@ -1,19 +1,11 @@
 #pragma once
 
-#ifdef NDEBUG
-#define tassert(x) ()
-#else
-#define tassert(x)                                                             \
-  if (!(x)) {                                                                  \
-    throw;                                                                     \
-  }
-#endif
-
 #include <algorithm>
 #include <cmath>
 
 #include "stl_io.hh"
 #include "vec3.hh"
+#include "../common.hh"
 
 using namespace mp::io;
 
@@ -78,10 +70,10 @@ private:
   void recalc_bounds(BVHNode *node, const std::vector<stl::Triangle> &tris) {
     node->aabb_max = -INFINITY;
     node->aabb_min = INFINITY;
-    // tassert(node->start >= 0);
-    // tassert(node->start < tris.size());
-    // tassert(node->end >= 0);
-    // tassert(node->end < tris.size());
+    tassert(node->start >= tris.begin());
+    tassert(node->start <= tris.end());
+    tassert(node->end >= tris.begin());
+    tassert(node->end <= tris.end());
 
     for (auto it = node->start; it < node->end; it++) {
       for (int vi = 0; vi < 3; vi++) {
