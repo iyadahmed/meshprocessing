@@ -46,27 +46,22 @@ static std::vector<CGALTriangle3> load_stl(const char *filepath) {
 
 static bool is_inside(const Tree &tree, const CGALPoint3 &&query_point) {
   int odd_intersections_num = 0;
-  int non_zero_intersections_num = 0;
   for (int i = 0; i < NUM_RANDOM_RAY_DIRECTIONS; i++) {
-    CGALRay3 ray(query_point,
-                 CGALVector3{RANDOM_RAY_DIRECTIONS[i][0], RANDOM_RAY_DIRECTIONS[i][1],
-                             RANDOM_RAY_DIRECTIONS[i][2]});
+    CGALRay3 ray(query_point, CGALVector3{RANDOM_RAY_DIRECTIONS[i][0],
+                                          RANDOM_RAY_DIRECTIONS[i][1],
+                                          RANDOM_RAY_DIRECTIONS[i][2]});
     size_t n = tree.number_of_intersected_primitives(ray);
-    non_zero_intersections_num += (bool)n;
     odd_intersections_num += (n & 1);
   }
-
-  return (odd_intersections_num >= (.5 * float(non_zero_intersections_num)))
-
-         && (non_zero_intersections_num >= (.4 * NUM_RANDOM_RAY_DIRECTIONS));
+  return (odd_intersections_num) >= (.5 * NUM_RANDOM_RAY_DIRECTIONS);
 }
 
 static bool is_inside_no_holes(const Tree &tree,
                                const CGALPoint3 &query_point) {
   for (int i = 0; i < NUM_RANDOM_RAY_DIRECTIONS; i++) {
-    CGALRay3 ray(query_point,
-                 CGALVector3{RANDOM_RAY_DIRECTIONS[i][0], RANDOM_RAY_DIRECTIONS[i][1],
-                             RANDOM_RAY_DIRECTIONS[i][2]});
+    CGALRay3 ray(query_point, CGALVector3{RANDOM_RAY_DIRECTIONS[i][0],
+                                          RANDOM_RAY_DIRECTIONS[i][1],
+                                          RANDOM_RAY_DIRECTIONS[i][2]});
     if (!tree.do_intersect(ray)) {
       return false;
     }
