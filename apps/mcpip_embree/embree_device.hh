@@ -9,9 +9,8 @@
  * This is extremely helpful for finding bugs in your code, prevents you
  * from having to add explicit error checking to each Embree API call.
  */
-void errorFunction(void *userPtr, enum RTCError error, const char *str)
-{
-    printf("error %d: %s\n", error, str);
+void errorFunction(void *userPtr, enum RTCError error, const char *str) {
+  printf("error %d: %s\n", error, str);
 }
 
 /*
@@ -25,13 +24,12 @@ void errorFunction(void *userPtr, enum RTCError error, const char *str)
  *
  * Note that RTCDevice is reference-counted.
  */
-RTCDevice initializeDevice()
-{
-    RTCDevice device = rtcNewDevice(NULL);
+RTCDevice initializeDevice() {
+  RTCDevice device = rtcNewDevice(NULL);
 
-    if (!device)
-        printf("error %d: cannot create device\n", rtcGetDeviceError(NULL));
+  if (!device)
+    printf("error %d: cannot create device\n", rtcGetDeviceError(NULL));
 
-    rtcSetDeviceErrorFunction(device, errorFunction, NULL);
-    return device;
+  rtcSetDeviceErrorFunction(device, errorFunction, NULL);
+  return device;
 }

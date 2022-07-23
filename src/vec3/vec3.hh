@@ -1,179 +1,140 @@
 /* Header only 3 component vector library,
  * the main reason to be header only is to allow inlining,
- * which is critical for this data structure, as it is meant to be used in very tight loops (e.g rendering, processing geometry, etc) */
-
-// NOTE: consider refactoring into header and source files with move constructor and assignment overriden to keep some of inlining performance
+ * which is critical for this data structure, as it is meant to be used in very
+ * tight loops (e.g rendering, processing geometry, etc) */
 
 #pragma once
 
 #include <cmath>
 #include <ostream>
 
-struct Vec3
-{
-    float x, y, z;
+struct Vec3 {
+  float x, y, z;
 
-    Vec3(float x, float y, float z) noexcept : x(x), y(y), z(z) {}
-    Vec3(const float buf[3]) noexcept
-    {
-        x = buf[0];
-        y = buf[1];
-        z = buf[2];
-    }
-    Vec3(float value = 0.0f) noexcept
-    {
-        x = y = z = value;
-    }
+  Vec3(float x, float y, float z) : x(x), y(y), z(z) {}
+  Vec3(const float buf[3]) {
+    x = buf[0];
+    y = buf[1];
+    z = buf[2];
+  }
+  Vec3(float value = 0.0f) { x = y = z = value; }
 
-    // https://stackoverflow.com/a/66663070/8094047
-    friend std::ostream &operator<<(std::ostream &os, Vec3 const &v)
-    {
-        return os << "<Vector (" << v.x << ", " << v.y << ", " << v.z << ")>";
-    }
+  // https://stackoverflow.com/a/66663070/8094047
+  friend std::ostream &operator<<(std::ostream &os, Vec3 const &v) {
+    return os << "<Vector (" << v.x << ", " << v.y << ", " << v.z << ")>";
+  }
 
-    static void min(Vec3 &out, const Vec3 &a, const Vec3 &b) noexcept
-    {
-        out.x = std::min(a.x, b.x);
-        out.y = std::min(a.y, b.y);
-        out.z = std::min(a.z, b.z);
-    }
+  static void min(Vec3 &out, const Vec3 &a, const Vec3 &b) {
+    out.x = std::min(a.x, b.x);
+    out.y = std::min(a.y, b.y);
+    out.z = std::min(a.z, b.z);
+  }
 
-    static void max(Vec3 &out, const Vec3 &a, const Vec3 &b) noexcept
-    {
-        out.x = std::max(a.x, b.x);
-        out.y = std::max(a.y, b.y);
-        out.z = std::max(a.z, b.z);
-    }
+  static void max(Vec3 &out, const Vec3 &a, const Vec3 &b) {
+    out.x = std::max(a.x, b.x);
+    out.y = std::max(a.y, b.y);
+    out.z = std::max(a.z, b.z);
+  }
 
-    void min(const Vec3 &other) noexcept
-    {
-        x = std::min(x, other.x);
-        y = std::min(y, other.y);
-        z = std::min(z, other.z);
-    }
+  static Vec3 max(const Vec3 &a, const Vec3 &b) {
+    Vec3 out;
+    max(out, a, b);
+    return out;
+  }
 
-    void max(const Vec3 &other) noexcept
-    {
-        x = std::max(x, other.x);
-        y = std::max(y, other.y);
-        z = std::max(z, other.z);
-    }
+  static Vec3 min(const Vec3 &a, const Vec3 &b) {
+    Vec3 out;
+    max(out, a, b);
+    return out;
+  }
 
-    float dot(const Vec3 &other) const noexcept
-    {
-        return x * other.x + y * other.y + z * other.z;
-    }
+  void min(const Vec3 &other) {
+    x = std::min(x, other.x);
+    y = std::min(y, other.y);
+    z = std::min(z, other.z);
+  }
 
-    Vec3 cross(const Vec3 &other) const noexcept
-    {
-        return {y * other.z - z * other.y,
-                z * other.x - x * other.z,
-                x * other.y - y * other.x};
-    }
+  void max(const Vec3 &other) {
+    x = std::max(x, other.x);
+    y = std::max(y, other.y);
+    z = std::max(z, other.z);
+  }
 
-    float length_squared() const noexcept
-    {
-        return x * x + y * y + z * z;
-    }
+  float dot(const Vec3 &other) const {
+    return x * other.x + y * other.y + z * other.z;
+  }
 
-    float length() const noexcept
-    {
-        return sqrt(length_squared());
-    }
+  Vec3 cross(const Vec3 &other) const {
+    return {y * other.z - z * other.y, z * other.x - x * other.z,
+            x * other.y - y * other.x};
+  }
 
-    void normalize() noexcept
-    {
-        *this /= length();
-    }
+  float length_squared() const { return x * x + y * y + z * z; }
 
-    Vec3 normalized() const noexcept
-    {
-        float l = length();
-        return {x / l, y / l, z / l};
-    }
+  float length() const { return sqrt(length_squared()); }
 
-    Vec3 operator+(const Vec3 &other) const noexcept
-    {
-        return {x + other.x, y + other.y, z + other.z};
-    }
+  void normalize() { *this /= length(); }
 
-    Vec3 operator-(const Vec3 &other) const noexcept
-    {
-        return {x - other.x, y - other.y, z - other.z};
-    }
+  Vec3 normalized() const {
+    float l = length();
+    return {x / l, y / l, z / l};
+  }
 
-    Vec3 operator-() const noexcept
-    {
-        return {-x, -y, -z};
-    }
+  Vec3 operator+(const Vec3 &other) const {
+    return {x + other.x, y + other.y, z + other.z};
+  }
 
-    Vec3 operator*(float t) const noexcept
-    {
-        return {x * t, y * t, z * t};
-    }
+  Vec3 operator-(const Vec3 &other) const {
+    return {x - other.x, y - other.y, z - other.z};
+  }
 
-    friend Vec3 operator*(float t, const Vec3 &v) noexcept
-    {
-        return v * t;
-    }
+  Vec3 operator-() const { return {-x, -y, -z}; }
 
-    Vec3 &operator+=(const Vec3 &other) noexcept
-    {
-        x += other.x;
-        y += other.y;
-        z += other.z;
-        return *this;
-    }
+  Vec3 operator*(float t) const { return {x * t, y * t, z * t}; }
 
-    Vec3 &operator*=(float t) noexcept
-    {
-        x *= t;
-        y *= t;
-        z *= t;
-        return *this;
-    }
+  friend Vec3 operator*(float t, const Vec3 &v) { return v * t; }
 
-    Vec3 &operator/=(float t) noexcept
-    {
-        x /= t;
-        y /= t;
-        z /= t;
-        return *this;
-    }
+  Vec3 &operator+=(const Vec3 &other) {
+    x += other.x;
+    y += other.y;
+    z += other.z;
+    return *this;
+  }
 
-    Vec3 operator/(float t) const noexcept
-    {
-        return {x / t, y / t, z / t};
-    }
+  Vec3 &operator*=(float t) {
+    x *= t;
+    y *= t;
+    z *= t;
+    return *this;
+  }
 
-    bool operator==(const Vec3 &other) const noexcept
-    {
-        return (x == other.x) && (y == other.y) && (z == other.z);
-    }
+  Vec3 &operator/=(float t) {
+    x /= t;
+    y /= t;
+    z /= t;
+    return *this;
+  }
 
-    bool operator!=(const Vec3 &other) const noexcept
-    {
-        return !(this->operator==(other));
-    }
+  Vec3 operator/(float t) const { return {x / t, y / t, z / t}; }
 
-    float &operator[](size_t index) noexcept
-    {
-        return reinterpret_cast<float *>(this)[index];
-    }
+  bool operator==(const Vec3 &other) const {
+    return (x == other.x) && (y == other.y) && (z == other.z);
+  }
 
-    float operator[](size_t index) const noexcept
-    {
-        return reinterpret_cast<const float *>(this)[index];
-    }
+  bool operator!=(const Vec3 &other) const {
+    return !(this->operator==(other));
+  }
+
+  float &operator[](size_t index) {
+    return reinterpret_cast<float *>(this)[index];
+  }
+
+  float operator[](size_t index) const {
+    return reinterpret_cast<const float *>(this)[index];
+  }
 };
 
 // Convenience functions
-inline Vec3 cross(const Vec3 &a, const Vec3 &b)
-{
-    return a.cross(b);
-}
+inline Vec3 cross(const Vec3 &a, const Vec3 &b) { return a.cross(b); }
 
-inline float dot(const Vec3 &a, const Vec3 &b)
-{
-    return a.dot(b);
-}
+inline float dot(const Vec3 &a, const Vec3 &b) { return a.dot(b); }

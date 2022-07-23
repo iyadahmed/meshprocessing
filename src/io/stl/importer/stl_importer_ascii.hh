@@ -18,7 +18,6 @@
  *  endsolid name
  */
 
-namespace mp::io::stl
-{
-    void read_stl_ascii(std::ifstream &ifs, std::vector<Triangle> &tris);
+namespace mp::io::stl {
+void read_stl_ascii(std::ifstream &ifs, std::vector<Triangle> &tris);
 }

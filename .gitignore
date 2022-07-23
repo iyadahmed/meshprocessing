@@ -1,4 +1,5 @@
-build/
-.vscode/
 .vs/
+.vscode/
+env/
+build/
 *.stl
