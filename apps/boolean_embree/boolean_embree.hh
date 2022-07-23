@@ -121,12 +121,16 @@ inline void collide_func(void *user_data_ptr, RTCCollision *collisions,
         bool a = t2.is_inside(s.a, TOL);
         bool b = t2.is_inside(s.b, TOL);
         if (a && b) {
-          // TODO: push both segment points as intersection result
+          data->output_triangle_points_map[primID1].push_back(s.a);
+          data->output_triangle_points_map[primID1].push_back(s.b);
+          // No need to push for primID0, as both of edge vertices already are included in the orignal triangle
+          // and original triangle vertices should be included when triangulating
         } else {
           // TODO: do full 2D edge-triangle intersection and push resulting
           // points possible outcomes: Two points, one point
         }
       } else if (side1 != side2) {
+        ray_plane_intersection_unchecked(s.a, (s.b - s.a).normalized(), t1.a, t1_normal);
         // TODO: do ray traingle intersection and push resulting point
       } else {
         // Else case explicitly not handled

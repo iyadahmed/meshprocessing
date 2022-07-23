@@ -17,7 +17,7 @@ target_compile_features(timers INTERFACE cxx_std_17)
 add_library(bvh INTERFACE)
 target_sources(bvh INTERFACE bvh/bvh.hh)
 target_include_directories(bvh INTERFACE bvh)
-target_link_libraries(bvh INTERFACE vec3 stl)
+target_link_libraries(bvh INTERFACE vec3)
 target_compile_features(bvh INTERFACE cxx_std_11)
 
 find_library(MATH_LIBRARY m)

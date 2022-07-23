@@ -3,14 +3,20 @@
 #include <algorithm>
 #include <cmath>
 
-#include "stl_io.hh"
 #include "vec3.hh"
 #include "../common.hh"
 
-using namespace mp::io;
 
 struct BVHTriangle {
-  Vec3 v0, v1, v2, centroid;
+  Vec3 a, b, c;
+  Vec3 &operator[](size_t i)
+  {
+    return reinterpret_cast<Vec3 *>(&(*this))[i];
+  }
+  Vec3 centroid() const
+  {
+    return (a + b + c) / 3;
+  };
 };
 
 struct BVHRay {
@@ -21,24 +27,19 @@ struct BVHRay {
 struct BVHNode {
   BVHNode *L, *R;
   Vec3 aabb_max, aabb_min;
-  std::vector<stl::Triangle>::iterator start, end;
+  std::vector<BVHTriangle>::iterator start, end;
   int count() const { return end - start + 1; }
 };
 
-inline Vec3 centroid(const stl::Triangle &t) {
-  Vec3 *verts = (Vec3 *)t.verts;
-  return (verts[0] + verts[1] + verts[2]) / 3;
-}
-
 void intersect_ray_tri(BVHRay &ray, const BVHTriangle &tri) {
-  const Vec3 edge1 = tri.v1 - tri.v0;
-  const Vec3 edge2 = tri.v2 - tri.v0;
+  const Vec3 edge1 = tri.b - tri.a;
+  const Vec3 edge2 = tri.c - tri.a;
   const Vec3 h = cross(ray.D, edge2);
   const float a = dot(edge1, h);
   if (a > -0.0001f && a < 0.0001f)
     return; // ray parallel to triangle
   const float f = 1 / a;
-  const Vec3 s = ray.O - tri.v0;
+  const Vec3 s = ray.O - tri.a;
   const float u = f * dot(s, h);
   if (u < 0 || u > 1)
     return;
@@ -67,7 +68,7 @@ class BVH {
 private:
   BVHNode *nodes_;
 
-  void recalc_bounds(BVHNode *node, const std::vector<stl::Triangle> &tris) {
+  void recalc_bounds(BVHNode *node, const std::vector<BVHTriangle> &tris) {
     node->aabb_max = -INFINITY;
     node->aabb_min = INFINITY;
     tassert(node->start >= tris.begin());
@@ -77,14 +78,14 @@ private:
 
     for (auto it = node->start; it < node->end; it++) {
       for (int vi = 0; vi < 3; vi++) {
-        node->aabb_max.max(it->verts[vi]);
-        node->aabb_min.min(it->verts[vi]);
+        node->aabb_max.max((*it)[vi]);
+        node->aabb_min.min((*it)[vi]);
       }
     }
   }
 
   void subdivide(BVHNode *nodes_pool, BVHNode *root,
-                 std::vector<stl::Triangle> &tris, int num_used_nodes) {
+                 std::vector<BVHTriangle> &tris, int num_used_nodes) {
     if (root->count() <= 2) {
       return;
     }
@@ -99,8 +100,8 @@ private:
     float split_pos = root->aabb_min[split_axis] + dims[split_axis] * .5;
 
     auto it =
-        std::partition(root->start, root->end, [=](const stl::Triangle &t) {
-          return centroid(t)[split_axis] < split_pos;
+        std::partition(root->start, root->end, [=](const BVHTriangle &t) {
+          return t.centroid()[split_axis] < split_pos;
         });
 
     if ((it == root->start) || (it == root->end)) {
@@ -134,7 +135,7 @@ private:
   };
 
 public:
-  BVH(std::vector<stl::Triangle> &tris) {
+  BVH(std::vector<BVHTriangle> &tris) {
     if (tris.size() == 0) {
       throw "Empty mesh";
     }

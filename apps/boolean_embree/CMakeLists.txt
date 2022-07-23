@@ -5,7 +5,6 @@ add_executable(
     indexed_mesh.hh
     cgal_types.hh
     utils.hh
-    common.hh
 )
 target_compile_features(boolean_embree PRIVATE cxx_std_17)
 target_link_libraries(

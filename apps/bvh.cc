@@ -3,6 +3,7 @@
 
 #include "bvh.hh"
 #include "stl_io.hh"
+#include "timers.hh"
 
 using namespace mp::io;
 
@@ -12,15 +13,23 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  std::vector<stl::Triangle> tris;
-  stl::read_stl(argv[1], tris);
+  std::vector<stl::Triangle> tris_stl;
+  stl::read_stl(argv[1], tris_stl);
 
-  if (tris.size() == 0) {
+  if (tris_stl.size() == 0) {
     puts("Empty mesh");
     return 0;
   }
 
-  BVH bvh(tris);
+  std::vector<BVHTriangle> input_tris;
+  for (const auto &t : tris_stl)
+  {
+    input_tris.push_back({t.verts[0], t.verts[1], t.verts[2]});
+  }
+
+  Timer t;
+  BVH bvh(input_tris);
+  t.tock();
   std::cout << bvh.count() << std::endl;
 
   return 0;

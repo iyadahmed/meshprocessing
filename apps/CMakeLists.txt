@@ -17,7 +17,7 @@ target_link_libraries(winding_numbers PRIVATE stl vec3 TBB::tbb)
 
 add_executable(bvhapp bvh.cc)
 target_compile_features(bvhapp PRIVATE cxx_std_17)
-target_link_libraries(bvhapp PRIVATE stl vec3 bvh)
+target_link_libraries(bvhapp PRIVATE stl vec3 bvh timers)
 
 add_executable(mcpip mcpip.cc)
 target_compile_features(mcpip PRIVATE cxx_std_17)
