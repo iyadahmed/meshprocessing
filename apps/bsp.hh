@@ -1,12 +1,10 @@
 #pragma once
 
 struct BSPNode {
-  float x = 0.0f, y = 0.0f, z = 0.0f;
-  float nx = 0.0f, ny = 0.0f,
-        nz = 0.0f; // Plane normal (no need to be normalized)
-  BSPNode *left = nullptr, *right = nullptr;
+  float x, y, z;
+  float nx, ny, nz; // Plane normal (no need to be normalized)
+  BSPNode *left, *right;
   size_t index; // TODO: we can probably get rid of this
-  bool is_leaf() const { return (left == nullptr) && (right == nullptr); }
 };
 
 struct BSPTree {
@@ -36,7 +34,7 @@ struct BSPTree {
     return node;
   }
 
-  size_t insert(float x, float y, float z, float merge_distance=0.0001f) {
+  size_t insert(float x, float y, float z, float merge_distance = 0.0001f) {
     if (num == 0) {
       auto node = this->new_node();
       node->x = x;
@@ -86,6 +84,6 @@ struct BSPTree {
       node->right = new_node;
     }
 
-	return new_node->index;
+    return new_node->index;
   }
 };
