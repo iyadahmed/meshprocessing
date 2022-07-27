@@ -7,9 +7,14 @@ set(EMBREE_LINK_TARGET embree3)
 
 add_subdirectory(boolean_embree)
 
-add_executable(bsp bsp.cc bsp.hh)
+add_executable(bsp bsp.cc bsp.hh nearest_point_structure.hh)
 target_compile_features(bsp PRIVATE cxx_std_17)
 target_link_libraries(bsp PRIVATE stl)
+
+add_executable(self_intersection self_intersection.cc)
+target_compile_features(self_intersection PRIVATE cxx_std_17)
+target_link_libraries(self_intersection PRIVATE stl CGAL::CGAL)
+
 add_executable(stl_stats stl_stats.cc)
 target_compile_features(stl_stats PRIVATE cxx_std_17)
 target_link_libraries(stl_stats PRIVATE stl vec3 timers)
