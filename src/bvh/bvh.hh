@@ -3,13 +3,28 @@
 #include <algorithm>
 #include <cmath>
 
-#include "../common.hh"
+#include "common.hh"
 #include "vec3.hh"
+
+struct BBox {
+  Vec3 max, min;
+};
 
 struct BVHTriangle {
   Vec3 a, b, c;
   Vec3 &operator[](size_t i) { return reinterpret_cast<Vec3 *>(&(*this))[i]; }
   Vec3 centroid() const { return (a + b + c) / 3; };
+  BBox calc_bounding_box() const {
+    BBox out;
+    out.max.max(a);
+    out.max.max(b);
+    out.max.max(c);
+
+    out.min.min(a);
+    out.min.min(b);
+    out.min.min(c);
+    return out;
+  }
 };
 
 struct BVHRay {
@@ -33,6 +48,9 @@ struct BVHNode {
   bool does_overlap(const BVHNode &other) const {
     return all_gt(aabb_max, other.aabb_min) &&
            (all_lt(aabb_min, other.aabb_max));
+  }
+  bool does_overlap(const BBox &bbox) const {
+    return all_gt(aabb_max, bbox.min) && all_lt(aabb_min, bbox.max);
   }
 };
 
@@ -82,7 +100,7 @@ private:
     tassert(node->end >= tris.begin());
     tassert(node->end <= tris.end());
 
-    for (auto it = node->start; it < node->end; it++) {
+    for (auto it = node->start; it != node->end; it++) {
       for (int vi = 0; vi < 3; vi++) {
         node->aabb_max.max((*it)[vi]);
         node->aabb_min.min((*it)[vi]);
@@ -167,6 +185,22 @@ public:
     }
     if (other_node.R) {
       overlap(node, *other_node.R, overlap_count);
+    }
+  }
+
+  void overlap(const BVHTriangle *triangle, const BVHNode *node) {
+    if (!node->does_overlap(triangle->calc_bounding_box())) {
+      return;
+    }
+
+    for (auto it = node->start; it != node->end; it++) {
+    }
+
+    if (node->L) {
+      overlap(triangle, node->L);
+    }
+    if (node->R) {
+      overlap(triangle, node->R);
     }
   }
 
