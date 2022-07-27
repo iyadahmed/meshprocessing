@@ -26,5 +26,6 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   # add_compile_definitions(TRACY_NO_EXIT)
 endif()
 
+include_directories(src/common)
 add_subdirectory(src)
 add_subdirectory(apps)
