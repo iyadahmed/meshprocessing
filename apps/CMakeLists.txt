@@ -2,8 +2,7 @@ include(libigl)
 find_package(TBB CONFIG REQUIRED)
 find_package(CGAL CONFIG REQUIRED)
 find_package(OpenMP REQUIRED)
-
-set(EMBREE_LINK_TARGET embree3)
+find_package(Embree REQUIRED)
 
 add_subdirectory(boolean_embree)
 
@@ -43,7 +42,7 @@ target_link_libraries(
   PRIVATE timers
           stl
           vec3
-          ${EMBREE_LINK_TARGET}
+          ${EMBREE_LIBRARIES}
           OpenMP::OpenMP_CXX
           TBB::tbb
           igl::core)

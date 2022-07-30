@@ -15,5 +15,5 @@ target_link_libraries(
     vec3
     CGAL::CGAL
     TBB::tbb
-    embree3
+    ${EMBREE_LIBRARIES}
 )
