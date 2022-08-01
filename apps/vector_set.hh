@@ -9,15 +9,14 @@
 template <typename T> struct VectorSet {
   struct Node {
     T value;
-    size_t index;
-    Node *next;
+    size_t next;
   };
 
   Node *pool;
   size_t pool_cap;
   size_t pool_count;
 
-  Node **buckets;
+  size_t *buckets;
   size_t bucket_count;
 
   VectorSet(size_t bucket_count = 1024) {
@@ -26,7 +25,10 @@ template <typename T> struct VectorSet {
     pool = new Node[pool_cap];
 
     this->bucket_count = bucket_count;
-    buckets = new Node *[this->bucket_count] { nullptr };
+    buckets = new size_t[this->bucket_count]{SIZE_MAX};
+    for (size_t i = 0; i < this->bucket_count; i++) {
+      buckets[i] = SIZE_MAX;
+    }
   }
 
   ~VectorSet() {
@@ -35,7 +37,7 @@ template <typename T> struct VectorSet {
     delete[] buckets;
   }
 
-  Node *new_node() {
+  size_t new_node() {
     if (pool_count == pool_cap) {
       size_t new_cap = pool_cap * 2;
       Node *new_pool = new Node[new_cap];
@@ -48,9 +50,7 @@ template <typename T> struct VectorSet {
     }
 
     size_t node_index = (pool_count++);
-    Node *node = pool + node_index;
-    node->index = node_index;
-    return node;
+    return node_index;
   }
 
   size_t insert(T value) {
@@ -58,17 +58,20 @@ template <typename T> struct VectorSet {
     MurmurHash3_x86_32(&value, sizeof(T), 0, &hash);
     size_t bucket_index = hash % bucket_count;
 
-    Node *node_iter = buckets[bucket_index];
-    while (node_iter != nullptr) {
-      if (node_iter->value == value) {
-        return node_iter->index;
+    // Check if value already exists
+    size_t node_iter = buckets[bucket_index];
+    while (node_iter != SIZE_MAX) {
+      if (pool[node_iter].value == value) {
+        return node_iter;
       }
-      node_iter = node_iter->next;
+      node_iter = pool[node_iter].next;
     }
-    Node* node = new_node();
-    node->value = value;
-    node->next = buckets[bucket_index];
-    buckets[bucket_index] = node;
-    return node->index;
+
+    // Insert new value
+    size_t node_index = new_node();
+    pool[node_index].value = value;
+    pool[node_index].next = buckets[bucket_index];
+    buckets[bucket_index] = node_index;
+    return node_index;
   }
 };
