@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
       verts_set.insert(v);
     }
   }
-  std::cout << verts_set.pool_count << std::endl;
+  std::cout << verts_set.count() << std::endl;
 
   // NearFarTree tree(tris.size() * 3);
 

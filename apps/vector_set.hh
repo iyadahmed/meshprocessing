@@ -7,6 +7,7 @@
 /* A set data structure which only grows (cannot delete elements) and can be
  * indexed */
 template <typename T> struct VectorSet {
+private:
   struct Node {
     T value;
     size_t next;
@@ -19,6 +20,23 @@ template <typename T> struct VectorSet {
   size_t *buckets;
   size_t bucket_count;
 
+  size_t new_node() {
+    if (pool_count == pool_cap) {
+      size_t new_cap = pool_cap * 2;
+      Node *new_pool = new Node[new_cap];
+      for (size_t i = 0; i < pool_count; i++) {
+        new_pool[i] = pool[i];
+      }
+      delete[] pool;
+      pool = new_pool;
+      pool_cap = new_cap;
+    }
+
+    size_t node_index = (pool_count++);
+    return node_index;
+  }
+
+public:
   VectorSet(size_t bucket_count = 1024) {
     pool_cap = 1;
     pool_count = 0;
@@ -35,22 +53,6 @@ template <typename T> struct VectorSet {
     // FIXME: avoid double free when copying or moving object
     delete[] pool;
     delete[] buckets;
-  }
-
-  size_t new_node() {
-    if (pool_count == pool_cap) {
-      size_t new_cap = pool_cap * 2;
-      Node *new_pool = new Node[new_cap];
-      for (size_t i = 0; i < pool_count; i++) {
-        new_pool[i] = pool[i];
-      }
-      delete[] pool;
-      pool = new_pool;
-      pool_cap = new_cap;
-    }
-
-    size_t node_index = (pool_count++);
-    return node_index;
   }
 
   size_t insert(T value) {
@@ -74,4 +76,8 @@ template <typename T> struct VectorSet {
     buckets[bucket_index] = node_index;
     return node_index;
   }
+
+  T &operator[](size_t index) { return pool[index]; }
+
+  size_t count() const { return pool_count; }
 };
