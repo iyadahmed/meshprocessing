@@ -6,7 +6,7 @@ find_package(Embree REQUIRED)
 
 add_subdirectory(boolean_embree)
 
-add_executable(bsp bsp.cc bsp.hh near_far_tree.hh)
+add_executable(bsp bsp.cc bsp.hh near_far_tree.hh MurmurHash3.h MurmurHash3.cpp vector_set.hh)
 target_compile_features(bsp PRIVATE cxx_std_17)
 target_link_libraries(bsp PRIVATE stl)
 

@@ -6,6 +6,9 @@ struct NearFarTree {
   struct Node {
     float x, y, z;
     Node *near, *far;
+    float distance_squared(Node *other) {
+      return x * other->x + y * other->y + z * other->z;
+    }
   };
 
   Node *nodes;
@@ -27,15 +30,19 @@ struct NearFarTree {
     delete[] nodes;
   }
   typedef Node *NodePtr;
-  Node *new_node() { return nodes + (num++); }
+  Node *new_node(float x, float y, float z) {
+    Node *nn = nodes + (num++);
+    nn->x = x;
+    nn->y = y;
+    nn->z = z;
+    nn->near = nullptr;
+    nn->far = nullptr;
+    return nn;
+  }
   void insert(NodePtr &node, float x, float y, float z) {
+
     if (node == nullptr) {
-      node = new_node();
-      node->x = x;
-      node->y = y;
-      node->z = z;
-      node->far = nullptr;
-      node->near = nullptr;
+      node = new_node(x, y, z);
       return;
     }
 
@@ -45,12 +52,7 @@ struct NearFarTree {
     float d = dx * dx + dy * dy + dz * dz;
 
     if (node->near == nullptr) {
-      Node *nn = new_node();
-      nn->x = x;
-      nn->y = y;
-      nn->z = z;
-      nn->far = nullptr;
-      nn->near = nullptr;
+      Node *nn = new_node(x, y, z);
       node->near = nn;
       return;
     }
@@ -61,23 +63,14 @@ struct NearFarTree {
     float dnear = dnx * dnx + dny * dny + dnz * dnz;
 
     if (d < dnear) {
-      Node *nn = new_node();
-      nn->x = x;
-      nn->y = y;
-      nn->z = z;
+      Node *nn = new_node(x, y, z);
       nn->near = node->near;
-      nn->far = nullptr;
       node->near = nn;
       return;
     }
 
     if (node->far == nullptr) {
-      Node *nn = new_node();
-      nn->x = x;
-      nn->y = y;
-      nn->z = z;
-      nn->far = nullptr;
-      nn->near = nullptr;
+      Node *nn = new_node(x, y, z);
       node->far = nn;
       return;
     }
@@ -88,12 +81,8 @@ struct NearFarTree {
     float dfar = dfx * dfx + dfy * dfy + dfz * dfz;
 
     if (d > dfar) {
-      Node *nn = new_node();
-      nn->x = x;
-      nn->y = y;
-      nn->z = z;
+      Node *nn = new_node(x, y, z);
       nn->near = node->far;
-      nn->far = nullptr;
       node->far = nn;
       return;
     }
