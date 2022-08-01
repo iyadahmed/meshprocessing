@@ -1,3 +1,5 @@
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS // To suppress warnings
+
 #include <cmath>
 #include <fstream>
 #include <iostream>
